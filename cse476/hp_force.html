@@ -156,6 +156,54 @@ var svg = d3.select("div#vis").append("svg")
   .append("g")
     .attr("transform", "translate(" + width * (config.draw_force ? 2 / 3 : 1 / 2) + "," + height / 2 + ")");
 
+
+// EXAMPLE svg grid
+svg.selectAll(".grid")
+    .data(radius.ticks(5))
+  .enter().append("g")
+    .attr("class", "grid")
+    .each(function (d) {
+
+    d3.select(this).append("circle")
+    .attr("r", radius(d))
+    .style("stroke", "lightgrey")
+    .attr("stroke-dasharray", "20,10")
+    .style("fill", "none")
+
+    d3.select(this).append("rect")
+    .attr("fill", "white")
+    .attr("height", 16)
+    .attr("width", 16)
+    .attr("fill-opacity", 0.8)
+    .attr("x", Math.cos(Math.PI/4) * radius(d))
+    .attr("y", -13 -Math.sin(Math.PI/4) * radius(d))
+    ;
+
+    d3.select(this).append("text")
+    .attr("fill", "black")
+    .attr("font-size", "0.6em")
+    .attr("x", Math.cos(Math.PI/4) * radius(d))
+    .attr("y", -Math.sin(Math.PI/4) * radius(d))
+    .text(d)
+    ;
+    });
+
+svg.append("text")
+    .attr("class", "grid-label")
+    .attr("fill", "black")
+    .attr("x", Math.cos(Math.PI/4) *  (20 + radius(radius.domain()[1])))
+    .attr("y", -Math.sin(Math.PI/4) * (20 + radius(radius.domain()[1])))
+    .attr("font-size", "0.8em")
+    .attr("font-style", "italic")
+    .text("node.b");
+
+
+
+
+
+
+
+
 var legends = d3.select("div#vis").append("svg")
     .attr("class", "legends")
     .attr("width", 36 * Math.max(color.domain().length, axis_color.domain().length))
@@ -251,7 +299,7 @@ svg.selectAll(".link")
     .angle(function(d) { return angle(d.a); })
     .radius(function(d) { return radius(d.b); }))
     .style("stroke", function(d) { return !nodes[d.source].max_targets ?
-        "lightgrey" : color(nodes[d.source].a); });
+        "#444" : color(nodes[d.source].a); });
   });
 
 
@@ -304,7 +352,7 @@ function toggle_select_link(d, i) {
         .style("stroke-width", 7);
     } else {
         d3.selectAll(".link_" + i)
-        .style("stroke-width", 0.5);
+        .style("stroke-width", 1.5);
     }
 }
 
@@ -340,54 +388,6 @@ svg
     .attr("font-style", "italic")
     .attr("y", -4) //eeek
     .text("node.a");
-
-
-
-
-
-
-// EXAMPLE svg grid
-svg.selectAll(".grid")
-    .data(radius.ticks(5))
-  .enter().append("g")
-    .attr("class", "grid")
-    .each(function (d) {
-
-    d3.select(this).append("circle")
-    .attr("r", radius(d))
-    .style("stroke", "lightgrey")
-    .attr("stroke-dasharray", "20,10")
-    .style("fill", "none")
-
-    d3.select(this).append("rect")
-    .attr("fill", "white")
-    .attr("height", 16)
-    .attr("width", 16)
-    .attr("fill-opacity", 0.8)
-    .attr("x", Math.cos(Math.PI/4) * radius(d))
-    .attr("y", -13 -Math.sin(Math.PI/4) * radius(d))
-    ;
-
-    d3.select(this).append("text")
-    .attr("fill", "black")
-    .attr("font-size", "0.6em")
-    .attr("x", Math.cos(Math.PI/4) * radius(d))
-    .attr("y", -Math.sin(Math.PI/4) * radius(d))
-    .text(d)
-    ;
-    });
-
-svg.append("text")
-    .attr("class", "grid-label")
-    .attr("fill", "black")
-    .attr("x", Math.cos(Math.PI/4) *  (20 + radius(radius.domain()[1])))
-    .attr("y", -Math.sin(Math.PI/4) * (20 + radius(radius.domain()[1])))
-    .attr("font-size", "0.8em")
-    .attr("font-style", "italic")
-    .text("node.b");
-
-
-
 
 
 
@@ -457,7 +457,7 @@ var svg_force = d3.select("svg.vis").append("g");
 
 // Per-type markers, as they don't inherit styles.
 svg_force.append("defs").selectAll("marker")
-    .data(color.range().concat(["lightgrey"]))
+    .data(color.range().concat(["#444"]))
   .enter().append("marker")
     .attr("id", function(d) { return d; })
     .attr("viewBox", "0 -5 10 10")
@@ -474,9 +474,9 @@ var path = svg_force.append("g").selectAll("path.link")
     .data(force.links())
   .enter().append("path")
     .attr("class", function (d,i) { return "link link_" + i; })
-    .style("stroke", function(d) { return !d.source.max_targets ? "lightgrey" : color(d.source.a); })
+    .style("stroke", function(d) { return !d.source.max_targets ? "#444" : color(d.source.a); })
     .attr("marker-end", function (d) { return "url(#"
-        + (!d.source.max_targets ? "lightgrey" : color(d.source.a)) + ")"; })
+        + (!d.source.max_targets ? "#444" : color(d.source.a)) + ")"; })
     .on("click", toggle_select_link);
 
 var circle = svg_force.append("g").selectAll("circle.node")
