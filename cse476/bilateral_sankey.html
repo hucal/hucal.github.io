@@ -1,0 +1,273 @@
+<!doctype html>
+<html class="no-js" lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title></title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <link rel="apple-touch-icon" href="apple-touch-icon.png">
+        <!-- Place favicon.ico in the root directory -->
+
+        <link rel="stylesheet" href="../css/normalize.css">
+        <link rel="stylesheet" href="../css/main.css">
+        <script src="../js/vendor/modernizr-2.8.3.min.js"></script>
+        <style>
+        </style>
+     </head>
+
+<body>
+<!--[if lt IE 8]>
+<p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+<![endif]-->
+
+    <!--div id="select-sort" class="dropdown"> <form><select>
+    </select></form></div--!>
+
+    <p>D3 visualization of
+    <a href="http://www.correlatesofwar.org/COW2%20Data/Trade/Trade.html">dyadic trade data</a>
+    from various years.</p>
+    <p>Thickness of green lines is linearly related to magnitude.</p>
+    <p>Use the URL's query string to change years. Will add a nicer timeline, and a more complete dataset soon.</p>
+    <p><a href=bilateral_sankey.html?fname=1870.json>1870.json</a>
+    <a href=bilateral_sankey.html?fname=1950.json>1950.json</a>
+    <a href=bilateral_sankey.html?fname=2009.json>2009.json</a></p>
+<script src="lib/jquery-1.10.2.min.js"></script>
+<script src='lib/d3.v3.js'></script>
+<script src='lib/sankey.js'></script>
+<script>
+
+var width = 900,
+    height = 11000;
+
+var svg = d3.select('body').append('svg')
+    .attr('width', width)
+    .attr('height', height);
+
+var format_money = d3.format(",.3f")
+
+var log_c = 0.0008;
+var minimum_rank = 2;
+
+var queryString = {};
+
+// read query string, from Stackoverflow somewhere...
+location.search.substr(1)
+    .split("&").forEach(function(item)
+            {queryString[item.split("=")[0]] = item.split("=")[1]});
+
+var fname = queryString.fname;
+
+if (queryString.fname === undefined)
+    fname = "1950.json";
+
+console.log("Reading data file data/" + fname)
+
+d3.json('data/' + fname, function(error, trade_data) {
+    if (error) {
+        console.log(error);
+        return;
+    }
+    var data = trade_data.nodes.filter(function (d) {
+        var v = (d.flow2_total + d.flow1_total);
+        d.name = d.links[0].importer1;
+        d.flow1_rank = minimum_rank + log_c * (1 + d.flow1_total);
+        d.flow2_rank = minimum_rank + log_c * (1 + d.flow2_total);
+
+        return (v > 0) && !isNaN(v) && (typeof v != 'undefined');
+    });
+
+    function alphabetic_sort(a, b) { return a.name.localeCompare(b.name); }
+    function total_dsc(a, b) {return d3.descending(a.flow2_total + a.flow1_total,
+                                                  b.flow2_total + b.flow1_total); }
+    function total_asc(a, b) {return d3.ascending(a.flow2_total + a.flow1_total,
+                                                  b.flow2_total + b.flow1_total); }
+    data.sort(alphabetic_sort);
+    update(data);
+
+    /*
+    setTimeout(function() {
+    data.sort(total_dsc);
+    update(data);
+    }, 2000)
+
+    setInterval(function() {
+        var ix = Math.floor(Math.random() * data.length)
+            t = data[ix];
+        data[ix] = data[data.length - 1 - ix];
+        data[data.length - 1 - ix] = t
+
+
+        update(data);
+    }, 5000);
+    */
+});
+
+
+function update(trade_data) {
+    /////// ad hoc layout
+    var _cur_y = 25;
+    var padding_left = width * 0.3;
+    var label_sep = width * 0.4;
+    var rect_width = 25;
+    var rect_sep = 30;
+
+    var data_by_ccode = trade_data.map(function(d){ return +d.ccode1; });
+    trade_data.forEach(function (node) {
+        node.old_x = node.x;
+        node.old_y = node.y;
+
+        node.x = padding_left;
+        node.y = _cur_y;
+        _cur_y += rect_sep + Math.max(node.flow1_rank, node.flow2_rank);
+
+    });
+    trade_data.forEach(function (node) {
+        node.links.forEach(function(other) {
+           other.node = trade_data
+               [data_by_ccode.indexOf(+other.ccode2)];
+        });
+    });
+    //////
+
+    var left_nodes = make_nodes(svg, 'left_label', 'end', -5,
+            function (d) {return d.flow1_rank},
+            function (d) {return d.flow2_rank});
+
+        var right_nodes = make_nodes(svg, 'right_label', 'start', 5 + rect_width,
+                function (d) {return d.flow2_rank},
+                function (d) {return d.flow1_rank});
+
+        left_nodes
+            .attr('transform', function (d) { return 'translate(' +
+                    (d.old_x === undefined ? d.x - label_sep : d.old_x) +','+
+                    (d.old_y === undefined ? d.y : d.old_y) + ')'; })
+            .transition().duration(1000)
+            .attr('transform', function (d) { return 'translate(' +
+                    d.x +','+ d.y + ')'; })
+
+        left_nodes.append('line')
+            .attr('class', 'grid_line')
+            .attr('stroke', 'lightgrey')
+            .attr('x1', 0)
+            .attr('y1', 0)
+            .attr('y2', 0)
+            .attr('x1', label_sep + rect_width)
+            .attr('stroke-width', 1);
+
+        right_nodes
+            .attr('transform', function (d) { return 'translate(' +
+                    (d.old_x === undefined ? d.x + 2 * label_sep : d.old_x + label_sep) +','+
+                    (d.old_y === undefined ? d.y : d.old_y) + ')'; })
+            .transition().duration(1000)
+
+        .attr('transform', function (d) { return 'translate(' +
+                (d.x + label_sep) +','+ d.y + ')'; });
+
+    function make_nodes(parentNode, class_, anchor, text_offset,
+      primary_rank, secondary_rank) {
+        var nodes = svg
+            .selectAll('g.' + class_)
+            .data(trade_data, function(d) { return d.ccode1; })
+            ;
+
+        // old elements
+        // nodes.selectAll('text')
+        //     .each(function(d){console.log(d);})
+        //     .text(function(d) { return d.name; })
+        //     ;
+
+        var nodes_enter = nodes.enter()
+            .append('g')
+            .attr('class', class_)
+            ;
+
+        // create new elements
+
+        nodes_enter.append('rect')
+            .attr('class', 'rank_rect')
+            .attr('width', rect_width)
+            .attr('style', 'fill: lightgreen')
+            .attr('height', primary_rank)
+            ;
+
+        // padding (gross)
+        nodes_enter
+            .append('rect')
+            .attr('class', 'padding_rect')
+            .attr('width', 0.0001)
+            .attr('height', rect_sep)
+            .attr('y', primary_rank)
+            .attr('style', 'fill: white')
+            ;
+
+        nodes_enter.append('text')
+            .attr('text-anchor', anchor)
+            .attr('x', text_offset)
+            .text(function(d) { return d.name; });
+            ;
+
+        nodes_enter.append('text')
+            .attr('x', text_offset)
+            .attr('y', rect_sep / 2)
+            .attr('text-anchor', anchor)
+            .attr('font-size', 10)
+            .text(function (d) { return format_money(class_ === 'left_label'
+                        ? d.flow1_total : d.flow2_total) + ' million USD';});
+
+        nodes.exit()
+            //.each(function(d){console.log(d);})
+            .transition().duration(500)
+            .attr('transform', function (d) { return 'translate('
+                + (d.x + label_sep/2) +','+ (-50) + ')'; })
+            .remove();
+
+        nodes
+            .on('click', function (d) {
+                if (d.selected === undefined) d.selected = false;
+                d.selected = !d.selected;
+                d3.select(this).selectAll('path')
+                    .attr('stroke', d.selected ? 'black' : 'none');
+            })
+
+            .each(function(d) {
+              var thisthis = this;
+                d3.select(thisthis).selectAll('path').remove();
+              d.links.forEach(function(other) {
+                // From sankey.js D3 plugin
+                var other_node = other.node;
+                if (other_node === undefined) return;
+                var
+                    x0 = class_ === 'left_label' ? rect_width : 0,
+                    x1 = class_ === 'left_label' ? label_sep : -label_sep,
+                    xi = d3.interpolateNumber(x0, x1),
+                    x2 = xi(0.2),
+                    x3 = xi(1 - 0.2),
+                    //WTF is sy y0 = d.y + d.sy + d.dy / 2,
+                    y0 = primary_rank(d) / 4,
+                    //WTF IS ty y1 = d.target.y + d.ty + d.dy / 2;
+                    y1 = other_node.y - d.y + secondary_rank(other_node) / 4;
+
+                d3.select(thisthis).append('path')
+                    .attr('stroke-width', 2)
+                    .attr('fill', 'none')
+                    .attr('stroke', 'none')
+                    .attr('d',
+                          "M" + x0 + "," + y0
+                        + "C" + x2 + "," + y0
+                        + " " + x3 + "," + y1
+                        + " " + x1 + "," + y1
+                    )
+                    ;
+            });
+          })
+            ;
+        return nodes;
+    }
+}
+
+
+</script>
+</body>
+</html>

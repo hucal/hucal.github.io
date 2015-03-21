@@ -1,0 +1,227 @@
+<!doctype html>
+<html class="no-js" lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>D3 Map, COW Data</title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+
+        <link rel="stylesheet" href="../css/normalize.css">
+        <link rel="stylesheet" href="../css/main.css">
+        <script src="../js/vendor/modernizr-2.8.3.min.js"></script>
+<style>
+
+.feature {
+  fill: lightblue;
+  stroke: black;
+  stroke-width: 0.5px;
+}
+
+.link_to {
+  fill: darkred;
+  stroke: none;
+}
+
+.link_from {
+  fill: lightgreen;
+  stroke: none;
+}
+
+.background {
+    fill: white;
+}
+
+
+</style>
+    </head>
+    <body>
+        <!--[if lt IE 8]>
+            <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+        <![endif]-->
+
+        <p>Not a very effective vis, but that can be changed. Click Russia.</p>
+        <p>Can change data sets, same as <a href=bilateral_sankey.html>this other draft vis</a></p>
+
+<!---script src='http://d3js.org/d3.v3.min.js'></script--!>
+<script src='lib/d3.v3.min.js'></script>
+<script src='lib/topojson.v1.min.js'></script>
+<script>
+
+var width = 960,
+    height = 1000;
+
+var projection = d3.geo.conicEquidistant()
+        .translate([width / 2, height / 2]);
+
+var path = d3.geo.path()
+    .projection(projection);
+
+
+var svg = d3.select('body').append('svg')
+    .attr('width', width)
+    .attr('height', height);
+
+var g = svg.append('g')
+;
+var g_links = svg.append('g')
+    .attr('class', 'links')
+;
+
+g.append('rect')
+    .attr('class', 'background')
+    .attr('width', width)
+    .attr('height', height);
+
+// read query string, from Stackoverflow somewhere...
+var queryString = {};
+location.search.substr(1)
+    .split("&").forEach(function(item)
+            {queryString[item.split("=")[0]] = item.split("=")[1]});
+
+var fname = queryString.fname;
+
+if (queryString.fname === undefined)
+    fname = "1950.json";
+
+console.log("Reading data file data/" + fname);
+
+
+d3.json('data/cshapes_q4.topo.json', function(error, topology) {
+  g.selectAll('.feature')
+      .data(topojson.feature(topology, topology.objects).features)
+      .enter()
+      .append('g')
+      .attr('class', 'country')
+      .append('path')
+      .attr('d', path)
+      .attr('class', function(d) { return 'feature ccode_' + d.properties.COWCODE; })
+      .on('mouseover', function(d) {
+           d3.select(this)
+           .style('fill', 'orange')
+       })
+       .on('mouseout', function(d) {
+           d3.select(this)
+           .style('fill', 'lightblue')
+       })
+       .each(function(d) {
+           d3.select(this)
+.append('svg:title')
+       .text(d.properties.ISONAME + ', capital: ' + d.properties.CAPNAME)
+
+       })
+       ;
+    d3.json('data/' + fname, function(error, trade) {
+        var seek_ccode_trade = trade.nodes.map(function(n) {
+            n.ccode1 = parseInt(n.ccode1);
+            return parseInt(n.ccode1); });
+        g.selectAll('g.country')
+        .each(function(d) {
+            var node_ix = seek_ccode_trade.indexOf(d.properties.COWCODE);
+            if (node_ix < 0) {
+//                console.log(d.properties.ISONAME + ' not found in trade data nodes');
+                return;
+            }
+            d.trade_info = trade.nodes[node_ix];
+            d.trade_info_on = false;
+            d3.select(this).on('click', toggle_trade_info);
+        });
+    });
+});
+
+// hover on links? crank up opacity!
+function toggle_trade_info(d) {
+    var node_coords = projection([d.properties.CAPLONG, d.properties.CAPLAT]);
+    var x1 = node_coords[0];
+    var y1 = node_coords[1];
+    d.trade_info_on = !d.trade_info_on;
+    if (d.trade_info_on) {
+        d3.select(this).each(function (_) {
+            var d_elem = d3.select(this);
+
+            var g_node = g_links.append('g')
+                .attr('class', 'links ccode_' + d.properties.COWCODE)
+                .on('click', function(_){toggle_trade_info(d);})
+                ;
+            var node_radius = Math.log(d.trade_info.flow1_total + 1)/3 + 1;
+
+            d.trade_info.links.forEach(function (other) {
+                  var e;
+                  d3.select('.ccode_' + other.ccode2)
+                  .each(function(_){
+                         e = _;
+                  });
+    var other_coords = projection([e.properties.CAPLONG, e.properties.CAPLAT]);
+
+
+                var x2 = other_coords[0];
+                var y2 = other_coords[1];
+                var dist = Math.sqrt(Math.pow(y2 - y1, 2)
+                                   + Math.pow(x2 - x1, 2));
+                var angle = Math.PI/2 + Math.atan2(y2 - y1, x2 - x1);
+
+                // draw circle at capital
+
+                // draw flow2 streamline
+                var dx = 2*Math.log(other.flow2) * Math.cos(angle);
+                var dy = 2*Math.log(other.flow2) * Math.sin(angle);
+                g_node.append('path')
+                .attr('class', 'link_to')
+                .attr('d', 'M '
+                    + (x1 + dx) +','+ (y1 + dy) + ' '
+                    + x2 +','+ y2 + ' '
+                    + x1 +','+ y1
+                    )
+                .append('title')
+                .text('From ' + d.properties.ISONAME + ' to ' + e.properties.ISONAME + ': ' + other.flow1
++ '\nFrom ' + e.properties.ISONAME + ' to ' + d.properties.ISONAME + ': ' + other.flow2
+                )
+                ;
+
+                // draw flow1 streamline
+                dx = 2*Math.log(other.flow1) * Math.cos(angle);
+                dy = 2*Math.log(other.flow1) * Math.sin(angle);
+                g_node.append('path')
+                .attr('class', 'link_from')
+                .attr('d', 'M '
+                    + (x2 + dx) +','+ (y2 + dy) + ' '
+                    + x1 +','+ y1 + ' '
+                    + x2 +','+ y2
+                    )
+                .append('title')
+                .text('From ' + d.properties.ISONAME + ' to ' + e.properties.ISONAME + ': ' + other.flow1
++ '\nFrom ' + e.properties.ISONAME + ' to ' + d.properties.ISONAME + ': ' + other.flow2
+                )
+                ;
+
+                 g_node.append('circle')
+                .attr('cx', x2)
+                .attr('cy', y2)
+                .attr('class', 'capital')
+                .attr('r', 0.5)
+                ;
+
+
+            });
+            g_node.append('circle')
+                .attr('cx', x1)
+                .attr('cy', y1)
+                .attr('class', 'capital')
+                .attr('r', node_radius)
+                ;
+
+        })
+        ;
+    }
+    else {
+        g_links.selectAll('g.ccode_' + d.properties.COWCODE).remove();
+
+    }
+}
+
+</script>
+</body>
+</html>
+
