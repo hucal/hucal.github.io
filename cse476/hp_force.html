@@ -51,12 +51,16 @@ body {
         visualization.
         Click nodes and links on either vis.
         Data is randomly generated on page load.
-        <p>To change number config, use the query string. UI will be improved...</p>
+        <p>To change graph config, use the query string. UI will be improved...</p>
         <p><a href=hp_force.html?nodes=30&links=50>nodes=30, links=50</a></p>
         <p><a href=hp_force.html?nodes=60&links=100&draw_nodes=0>nodes=60, links=100, and
         don't draw HP nodes</a></p>
         <p><a href=hp_force.html?nodes=200&links=400&draw_force=0&draw_nodes=0>nodes=200, links=400,
         don't draw HP nodes, and don't draw Force Layout</a></p>
+        <div class="hfill"/>
+        <br/>
+        <h2>Data dump</h2>
+        <div id="data-dump"></div>
 
 <script src="lib/jquery-1.10.2.min.js"></script>
 <script src="lib/colorbrewer.js"></script>
@@ -112,6 +116,8 @@ var links = random_links(nodes, config.links/2, config.links/2, randint);
 links = links.concat(random_links(nodes, config.links/2, config.links/2,
             mk_randint_normal(0, nodes.length - 1)));
 
+$("div#data-dump").text(JSON.stringify({nodes:nodes, links:links}, null, 2));
+
 var draw_nodes = config.draw_nodes;
 var draw_force = config.draw_force;
 
@@ -125,6 +131,7 @@ links.forEach(function(l) {
 
 nodes.sort(function (a,b) { return d3.descending(a._n_targets, b._n_targets); })
      .slice(0,3).forEach(function (max_node) { max_node.max_targets = true; });
+
 
 
 var width = 900,
