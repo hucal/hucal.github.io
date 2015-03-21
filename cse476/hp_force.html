@@ -46,7 +46,6 @@ body {
             <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
         <![endif]-->
 
-        <div id="vis"></div>
         <p><a href=http://hiveplot.net/>Hive Plot</a> and Force Layout brushing
         visualization.
         Click nodes and links on either vis.
@@ -57,6 +56,7 @@ body {
         don't draw HP nodes</a></p>
         <p><a href=hp_force.html?nodes=200&links=400&draw_force=0&draw_nodes=0>nodes=200, links=400,
         don't draw HP nodes, and don't draw Force Layout</a></p>
+        <div id="vis"></div>
         <div class="hfill"/>
         <br/>
         <h2>Data dump</h2>
@@ -231,6 +231,8 @@ svg.selectAll(".axis")
 // by axis, by group, select multiple (ctrl, shift, mobile controls..), by nodes
 
 // TODO fix paths!!! same positions = circle segment
+
+// TODO draw colored links on top of others
 svg.selectAll(".link")
     .data(links)
   .enter().append("path")
