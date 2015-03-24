@@ -28,27 +28,38 @@
     <p>D3 visualization of
     <a href="http://www.correlatesofwar.org/COW2%20Data/Trade/Trade.html">dyadic trade data</a>
     from various years.</p>
-    <p>Thickness of green lines is linearly related to magnitude.</p>
     <p>Use the URL's query string to change years. Will add a nicer timeline, and a more complete dataset soon.</p>
     <p><a href=bilateral_sankey.html?fname=1870.json>1870.json</a>
     <a href=bilateral_sankey.html?fname=1950.json>1950.json</a>
     <a href=bilateral_sankey.html?fname=2009.json>2009.json</a></p>
-<script src="lib/jquery-1.10.2.min.js"></script>
+    <div id="vis"></div>
+<script src="lib/jquery-1.11.2.min.js"></script>
 <script src='lib/d3.v3.js'></script>
 <script src='lib/sankey.js'></script>
 <script>
 
-var width = 900,
-    height = 11000;
+var margin = {top: 10, right: 150, bottom: 10, left: 150},
+    width = 900 - margin.left - margin.right,
+    height = 5000 - margin.top - margin.bottom;
 
-var svg = d3.select('body').append('svg')
-    .attr('width', width)
-    .attr('height', height);
+var  color = d3.scale.category20();
+
+// append the svg canvas to the page
+var svg = d3.select("div#vis").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform",
+          "translate(" + margin.left + "," + margin.top + ")");
+
+var sankey = d3.sankey()
+    .nodeWidth(50)
+    .nodePadding(30)
+    .size([width, height]);
+
+var path = sankey.link();
 
 var format_money = d3.format(",.3f")
-
-var log_c = 0.0008;
-var minimum_rank = 2;
 
 var queryString = {};
 
@@ -69,22 +80,66 @@ d3.json('data/' + fname, function(error, trade_data) {
         console.log(error);
         return;
     }
-    var data = trade_data.nodes.filter(function (d) {
-        var v = (d.flow2_total + d.flow1_total);
+    var data = trade_data.nodes;
+    data.forEach(function (d) {
+        if (isNaN(d.flow1_total) || typeof(d.flow1_total) === undefined)
+            d.flow1_total = -18;
+        if (isNaN(d.flow2_total) || typeof(d.flow2_total) === undefined)
+            d.flow2_total = -18;
         d.name = d.links[0].importer1;
-        d.flow1_rank = minimum_rank + log_c * (1 + d.flow1_total);
-        d.flow2_rank = minimum_rank + log_c * (1 + d.flow2_total);
-
-        return (v > 0) && !isNaN(v) && (typeof v != 'undefined');
+        d.ccode1 = +d.ccode1;
+        d.links.forEach(function(e) { e.ccode2 = +e.ccode2; e.flow1 = +e.flow1, e.flow2 = +e.flow2;})
+        d.targetLinks = [];
+        d.sourceLinks = [];
     });
+
+    graph = {
+        links: [], nodes_left: data, nodes_right: $.extend(true, [], data)
+    };
+
+    // index nodes by their ccode
+    by_ccode = [];
+    data.forEach(function(d, i) {
+        d.value = 40;
+        by_ccode.push(d.ccode1);
+    });
+
+    var obj_wtf = {name: "WTF", targetLinks: [], sourceLinks: [], flow1:-9, flow2:-9};
+    graph.nodes_left.forEach(function (d) {
+        d.links.forEach(function (child) {
+            var child_obj = graph.nodes_right[by_ccode.indexOf(child.ccode2)];
+            if (child_obj === undefined) child_obj = obj_wtf;
+            var l2 = {
+                source: d,
+                target: child_obj,
+                value: child.flow1
+            };
+            var l1 = {
+                source: child_obj,
+                target: d,
+                value: child.flow2
+            };
+            d.sourceLinks.push(l1);
+            child_obj.targetLinks.push(l1);
+            graph.links.push(l1);
+
+            child_obj.links = undefined;
+        });
+        d.links = undefined;
+    });
+
+    graph.nodes = graph.nodes_left.concat(graph.nodes_right);
+    graph.nodes.sort(total_asc)
+
+    console.log(graph);
+
+    update(graph);
 
     function alphabetic_sort(a, b) { return a.name.localeCompare(b.name); }
     function total_dsc(a, b) {return d3.descending(a.flow2_total + a.flow1_total,
                                                   b.flow2_total + b.flow1_total); }
     function total_asc(a, b) {return d3.ascending(a.flow2_total + a.flow1_total,
                                                   b.flow2_total + b.flow1_total); }
-    data.sort(alphabetic_sort);
-    update(data);
 
     /*
     setTimeout(function() {
@@ -105,166 +160,88 @@ d3.json('data/' + fname, function(error, trade_data) {
 });
 
 
-function update(trade_data) {
-    /////// ad hoc layout
-    var _cur_y = 25;
-    var padding_left = width * 0.3;
-    var label_sep = width * 0.4;
-    var rect_width = 25;
-    var rect_sep = 30;
+function update(graph) {
+// Set the sankey diagram properties
 
-    var data_by_ccode = trade_data.map(function(d){ return +d.ccode1; });
-    trade_data.forEach(function (node) {
-        node.old_x = node.x;
-        node.old_y = node.y;
+// load the data
+  sankey
+      .nodes(graph.nodes)
+      .links(graph.links)
+      .layout(64);
 
-        node.x = padding_left;
-        node.y = _cur_y;
-        _cur_y += rect_sep + Math.max(node.flow1_rank, node.flow2_rank);
+// add in the links
+  var link = svg.append("g").selectAll(".link")
+      .data(graph.links)
+    .enter().append("path")
+    .attr("class", function(d) {
+        return "link link_to_" + d.target.name.replace(/ /g, "_")
+             + " link_from_" + d.source.name.replace(/ /g, "_");
+    })
+      .attr("d", path)
+      .attr("fill", "none")
+      .attr("stroke", "none")//function (d) {
+//		  return color(d.source.name.replace(/ .*/, "")); })
+      .style("stroke-width", function(d) { return Math.max(1, d.dy); })
+      .sort(function(a, b) { return b.dy - a.dy; });
 
-    });
-    trade_data.forEach(function (node) {
-        node.links.forEach(function(other) {
-           other.node = trade_data
-               [data_by_ccode.indexOf(+other.ccode2)];
-        });
-    });
-    //////
+// add the link titles
+//  link.append("title");
 
-    var left_nodes = make_nodes(svg, 'left_label', 'end', -5,
-            function (d) {return d.flow1_rank},
-            function (d) {return d.flow2_rank});
+// add in the nodes
+  var node = svg.append("g").selectAll(".node")
+      .data(graph.nodes)
+    .enter().append("g")
+      .attr("class", "node")
+      .attr("transform", function(d) {
+		  return "translate(" + d.x + "," + d.y + ")"; })
+    .call(d3.behavior.drag()
+      .origin(function(d) { return d; })
+      .on("dragstart", function() {
+		  this.parentNode.appendChild(this); })
+      .on("drag", dragmove))
+      .on("click", function(d) {
 
-        var right_nodes = make_nodes(svg, 'right_label', 'start', 5 + rect_width,
-                function (d) {return d.flow2_rank},
-                function (d) {return d.flow1_rank});
+        d3.select(".link_from_" + d.name.replace(/ /g, "_"))
+            .attr("stroke", d.color);
+      })
+    ;
 
-        left_nodes
-            .attr('transform', function (d) { return 'translate(' +
-                    (d.old_x === undefined ? d.x - label_sep : d.old_x) +','+
-                    (d.old_y === undefined ? d.y : d.old_y) + ')'; })
-            .transition().duration(1000)
-            .attr('transform', function (d) { return 'translate(' +
-                    d.x +','+ d.y + ')'; })
+// add the rectangles for the nodes
+  node.append("rect")
+      .attr("height", function(d) { return d.dy + 2; })
+      .attr("width", sankey.nodeWidth())
+      .style("fill", function(d) {
+		  return d.color = color(d.name.replace(/ .*/, "")); })
+      .style("stroke", function(d) {
+		  return d3.rgb(d.color).darker(2); });
 
-        left_nodes.append('line')
-            .attr('class', 'grid_line')
-            .attr('stroke', 'lightgrey')
-            .attr('x1', 0)
-            .attr('y1', 0)
-            .attr('y2', 0)
-            .attr('x1', label_sep + rect_width)
-            .attr('stroke-width', 1);
+// add in the title for the nodes
+  node.append("text")
+      .attr("x", 6 + sankey.nodeWidth())
+      .attr("y", function(d) { return d.dy / 2; })
+      .attr("dy", ".35em")
+      .attr("text-anchor", "start")
+      .attr("transform", null)
+      .text(function(d) { return d.name; })
+    .filter(function(d) { return d.x < width / 2; })
+      .attr("x", -6)
+      .attr("text-anchor", "end");
 
-        right_nodes
-            .attr('transform', function (d) { return 'translate(' +
-                    (d.old_x === undefined ? d.x + 2 * label_sep : d.old_x + label_sep) +','+
-                    (d.old_y === undefined ? d.y : d.old_y) + ')'; })
-            .transition().duration(1000)
+  console.log(graph);
 
-        .attr('transform', function (d) { return 'translate(' +
-                (d.x + label_sep) +','+ d.y + ')'; });
+// the function for moving the nodes
+  function dragmove(d) {
+    d3.select(this).attr("transform",
+        "translate(" + d.x + "," + (
+                d.y = Math.max(0, Math.min(height - d.dy, d3.event.y))
+            ) + ")");
+    sankey.relayout();
+    link.attr("d", path);
+  }
 
-    function make_nodes(parentNode, class_, anchor, text_offset,
-      primary_rank, secondary_rank) {
-        var nodes = svg
-            .selectAll('g.' + class_)
-            .data(trade_data, function(d) { return d.ccode1; })
-            ;
 
-        // old elements
-        // nodes.selectAll('text')
-        //     .each(function(d){console.log(d);})
-        //     .text(function(d) { return d.name; })
-        //     ;
 
-        var nodes_enter = nodes.enter()
-            .append('g')
-            .attr('class', class_)
-            ;
 
-        // create new elements
-
-        nodes_enter.append('rect')
-            .attr('class', 'rank_rect')
-            .attr('width', rect_width)
-            .attr('style', 'fill: lightgreen')
-            .attr('height', primary_rank)
-            ;
-
-        // padding (gross)
-        nodes_enter
-            .append('rect')
-            .attr('class', 'padding_rect')
-            .attr('width', 0.0001)
-            .attr('height', rect_sep)
-            .attr('y', primary_rank)
-            .attr('style', 'fill: white')
-            ;
-
-        nodes_enter.append('text')
-            .attr('text-anchor', anchor)
-            .attr('x', text_offset)
-            .text(function(d) { return d.name; });
-            ;
-
-        nodes_enter.append('text')
-            .attr('x', text_offset)
-            .attr('y', rect_sep / 2)
-            .attr('text-anchor', anchor)
-            .attr('font-size', 10)
-            .text(function (d) { return format_money(class_ === 'left_label'
-                        ? d.flow1_total : d.flow2_total) + ' million USD';});
-
-        nodes.exit()
-            //.each(function(d){console.log(d);})
-            .transition().duration(500)
-            .attr('transform', function (d) { return 'translate('
-                + (d.x + label_sep/2) +','+ (-50) + ')'; })
-            .remove();
-
-        nodes
-            .on('click', function (d) {
-                if (d.selected === undefined) d.selected = false;
-                d.selected = !d.selected;
-                d3.select(this).selectAll('path')
-                    .attr('stroke', d.selected ? 'black' : 'none');
-            })
-
-            .each(function(d) {
-              var thisthis = this;
-                d3.select(thisthis).selectAll('path').remove();
-              d.links.forEach(function(other) {
-                // From sankey.js D3 plugin
-                var other_node = other.node;
-                if (other_node === undefined) return;
-                var
-                    x0 = class_ === 'left_label' ? rect_width : 0,
-                    x1 = class_ === 'left_label' ? label_sep : -label_sep,
-                    xi = d3.interpolateNumber(x0, x1),
-                    x2 = xi(0.2),
-                    x3 = xi(1 - 0.2),
-                    //WTF is sy y0 = d.y + d.sy + d.dy / 2,
-                    y0 = primary_rank(d) / 4,
-                    //WTF IS ty y1 = d.target.y + d.ty + d.dy / 2;
-                    y1 = other_node.y - d.y + secondary_rank(other_node) / 4;
-
-                d3.select(thisthis).append('path')
-                    .attr('stroke-width', 2)
-                    .attr('fill', 'none')
-                    .attr('stroke', 'none')
-                    .attr('d',
-                          "M" + x0 + "," + y0
-                        + "C" + x2 + "," + y0
-                        + " " + x3 + "," + y1
-                        + " " + x1 + "," + y1
-                    )
-                    ;
-            });
-          })
-            ;
-        return nodes;
-    }
 }
 
 
