@@ -14,6 +14,10 @@
         <link rel="stylesheet" href="../css/main.css">
         <script src="../js/vendor/modernizr-2.8.3.min.js"></script>
         <style>
+.link {
+    fill: none;
+    stroke-opacity: 0.7;
+}
         </style>
      </head>
 
@@ -40,7 +44,7 @@
 
 var margin = {top: 10, right: 150, bottom: 10, left: 150},
     width = 900 - margin.left - margin.right,
-    height = 5000 - margin.top - margin.bottom;
+    height = 9000 - margin.top - margin.bottom;
 
 var  color = d3.scale.category20();
 
@@ -53,8 +57,8 @@ var svg = d3.select("div#vis").append("svg")
           "translate(" + margin.left + "," + margin.top + ")");
 
 var sankey = d3.sankey()
-    .nodeWidth(50)
-    .nodePadding(30)
+    .nodeWidth(80)
+    .nodePadding(20)
     .size([width, height]);
 
 var path = sankey.link();
@@ -82,15 +86,16 @@ d3.json('data/' + fname, function(error, trade_data) {
     }
     var data = trade_data.nodes;
     data.forEach(function (d) {
-        if (isNaN(d.flow1_total) || typeof(d.flow1_total) === undefined)
-            d.flow1_total = -18;
-        if (isNaN(d.flow2_total) || typeof(d.flow2_total) === undefined)
-            d.flow2_total = -18;
         d.name = d.links[0].importer1;
         d.ccode1 = +d.ccode1;
-        d.links.forEach(function(e) { e.ccode2 = +e.ccode2; e.flow1 = +e.flow1, e.flow2 = +e.flow2;})
+        d.links.forEach(function(e) {
+            e.ccode2 = +e.ccode2; e.flow1 = +e.flow1, e.flow2 = +e.flow2;
+            if (e.flow1 < 0.0001) e.flow1 = 0.0001;
+            if (e.flow2 < 0.0001) e.flow2 = 0.0001;
+        })
         d.targetLinks = [];
         d.sourceLinks = [];
+        d.selected = false;
     });
 
     graph = {
@@ -167,7 +172,7 @@ function update(graph) {
   sankey
       .nodes(graph.nodes)
       .links(graph.links)
-      .layout(64);
+      .layout(200);
 
 // add in the links
   var link = svg.append("g").selectAll(".link")
@@ -178,7 +183,6 @@ function update(graph) {
              + " link_from_" + d.source.name.replace(/ /g, "_");
     })
       .attr("d", path)
-      .attr("fill", "none")
       .attr("stroke", "none")//function (d) {
 //		  return color(d.source.name.replace(/ .*/, "")); })
       .style("stroke-width", function(d) { return Math.max(1, d.dy); })
@@ -200,15 +204,21 @@ function update(graph) {
 		  this.parentNode.appendChild(this); })
       .on("drag", dragmove))
       .on("click", function(d) {
-
-        d3.select(".link_from_" + d.name.replace(/ /g, "_"))
-            .attr("stroke", d.color);
+        d.selected = !d.selected;
+        d3.selectAll(".link_to_" + d.name.replace(/ /g, "_"))
+            .attr("stroke", d.selected ? d.color : "none");
       })
     ;
+    node.filter(function(d) { return d.x < width / 2; })
+      .on("click", function(d) {
+        d.selected = !d.selected;
+        d3.selectAll(".link_from_" + d.name.replace(/ /g, "_"))
+            .attr("stroke", d.selected ? d.color : "none");
+      })
 
 // add the rectangles for the nodes
   node.append("rect")
-      .attr("height", function(d) { return d.dy + 2; })
+      .attr("height", function(d) { return d.dy + 1; })
       .attr("width", sankey.nodeWidth())
       .style("fill", function(d) {
 		  return d.color = color(d.name.replace(/ .*/, "")); })
