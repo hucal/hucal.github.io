@@ -101,10 +101,13 @@ header {
 
 * {
     color: #222;
+}
+
+.has-text, * {
     font-family: Verdana, Geneva, sans-serif;
 }
 
-p {
+.has-text, p {
     font-size: 0.8em;
 }
 
