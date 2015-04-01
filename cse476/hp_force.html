@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <title>CSE476 Projects</title>
+        <title>Hive Plot vs Force Directed Layout</title>
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
@@ -12,28 +12,29 @@
         <link rel="stylesheet" href="../css/normalize.css">
         <link rel="stylesheet" href="../css/main.css">
         <script src="../js/vendor/modernizr-2.8.3.min.js"></script>
-<!--
-Nested selections for axis groups: http://bost.ocks.org/mike/nest/
-HP article:
-http://bib.oxfordjournals.org/content/early/2011/12/09/bib.bbr069.full
-
-http://www.hiveplot.net/
-also the intro 1 and 2 PDFs
-and the 3 D3 examples
-
---!>
-
 <style>
 
 .link {
   fill: none;
   stroke-width:2px;
-  stroke-opacity: 0.6;
 }
 
-.axis, .node {
+.node {
   stroke-width: 1.5px;
 }
+
+.axis {
+    stroke: grey;
+    stroke-width: 3px;
+}
+
+text.axis-label, text.axis-angle {
+    stroke: none;
+    fill: black;
+    font-size: 0.8em;
+    text-anchor: middle;
+}
+text.axis-label {font-weight: bold}
 
 body {
     text-align: center;
@@ -52,12 +53,14 @@ body {
         Click nodes and links on either vis.
         Data is randomly generated on page load.
         <p>To change graph config, use the query string. UI will be improved...</p>
-        <p><a href=hp_force.html?nodes=30&links=50>nodes=30, links=50</a></p>
-        <p><a href=hp_force.html?nodes=60&links=100&draw_nodes=0>nodes=60, links=100, and
-        don't draw HP nodes</a></p>
-        <p><a href=hp_force.html?nodes=200&links=400&draw_force=0&draw_nodes=0>nodes=200, links=400,
+        <p><a href=hp_force.html?nodes=10&links=40>nodes=10, links=40</a></p>
+        <p><a href=hp_force.html?nodes=100&links=100>nodes=100, links=100</a></p>
+        <p><a href=hp_force.html?nodes=900&links=400&draw_force=0>nodes=900, links=400, and
+        don't draw force layout</a></p>
+        <p><a href=hp_force.html?nodes=1000&links=3000&draw_force=0&draw_nodes=0>nodes=1000, links=3000,
         don't draw HP nodes, and don't draw Force Layout</a></p>
         <div id="vis"></div>
+        <div id="vis_force"></div>
         <div class="hfill"/>
         <br/>
         <h2>Data dump</h2>
@@ -66,9 +69,93 @@ body {
 <script src="lib/jquery-1.10.2.min.js"></script>
 <script src="lib/colorbrewer.js"></script>
 <script src="lib/d3.v3.min.js"></script>
-<script src="lib/d3.hive.v0.min.js"></script>
+<!--script src="lib/d3.hive.v0.min.js"></script--!>
 <script>
+d3.hive = {};
 
+d3.hive.link = function() {
+  var source = function(d) { return d.source; },
+      target = function(d) { return d.target; },
+      angle = function(d) { return d.angle; },
+      startRadius = function(d) { return d.radius; },
+      endRadius = startRadius,
+      arcOffset = 0; //-Math.PI / 2;
+
+  function link(d, i) {
+    var s = node(source, this, d, i),
+        t = node(target, this, d, i),
+        x;
+    if (t.a < s.a) x = t, t = s, s = x;
+    if (t.a - s.a > Math.PI) s.a += 2 * Math.PI;
+    var a1 = s.a + (t.a - s.a) / 3,
+        a2 = t.a - (t.a - s.a) / 3;
+    return s.r0 - s.r1 || t.r0 - t.r1
+        ? "M" + Math.cos(s.a) * s.r0 + "," + Math.sin(s.a) * s.r0
+        + "L" + Math.cos(s.a) * s.r1 + "," + Math.sin(s.a) * s.r1
+        + "C" + Math.cos(a1) * s.r1 + "," + Math.sin(a1) * s.r1
+        + " " + Math.cos(a2) * t.r1 + "," + Math.sin(a2) * t.r1
+        + " " + Math.cos(t.a) * t.r1 + "," + Math.sin(t.a) * t.r1
+        + "L" + Math.cos(t.a) * t.r0 + "," + Math.sin(t.a) * t.r0
+        + "C" + Math.cos(a2) * t.r0 + "," + Math.sin(a2) * t.r0
+        + " " + Math.cos(a1) * s.r0 + "," + Math.sin(a1) * s.r0
+        + " " + Math.cos(s.a) * s.r0 + "," + Math.sin(s.a) * s.r0
+        : "M" + Math.cos(s.a) * s.r0 + "," + Math.sin(s.a) * s.r0
+        + "C" + Math.cos(a1) * s.r1 + "," + Math.sin(a1) * s.r1
+        + " " + Math.cos(a2) * t.r1 + "," + Math.sin(a2) * t.r1
+        + " " + Math.cos(t.a) * t.r1 + "," + Math.sin(t.a) * t.r1;
+  }
+
+  function node(method, thiz, d, i) {
+    var node = method.call(thiz, d, i),
+      // TODO CHANGE OK???? MAY DESTROY D3's PURITY!!!!
+      //call(thiz, node, i) -> call(thiz, node, i, d)
+        a = +(typeof angle === "function" ? angle.call(thiz, node, i, d) : angle) + arcOffset,
+        r0 = +(typeof startRadius === "function" ? startRadius.call(thiz, node, i, d) : startRadius),
+        r1 = (startRadius === endRadius ? r0 : +(typeof endRadius === "function" ? endRadius.call(thiz, node, i, d) : endRadius));
+    return {r0: r0, r1: r1, a: a};
+  }
+
+  link.source = function(_) {
+    if (!arguments.length) return source;
+    source = _;
+    return link;
+  };
+
+  link.target = function(_) {
+    if (!arguments.length) return target;
+    target = _;
+    return link;
+  };
+
+  link.angle = function(_) {
+    if (!arguments.length) return angle;
+    angle = _;
+    return link;
+  };
+
+  link.radius = function(_) {
+    if (!arguments.length) return startRadius;
+    startRadius = endRadius = _;
+    return link;
+  };
+
+  link.startRadius = function(_) {
+    if (!arguments.length) return startRadius;
+    startRadius = _;
+    return link;
+  };
+
+  link.endRadius = function(_) {
+    if (!arguments.length) return endRadius;
+    endRadius = _;
+    return link;
+  };
+
+  return link;
+};
+</script>
+<script>
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // TODO use lasso to select many nodes
 
 // TODO nice labels + overlapping links
@@ -101,7 +188,7 @@ location.search.substr(1)
     .split("&").forEach(function(item)
             {queryString[item.split("=")[0]] = item.split("=")[1]});
 
-var config = {nodes: 10, links: 20, draw_nodes: true, draw_force: true};
+var config = {nodes: 20, links: 40, draw_nodes: true, draw_force: true};
 
 ["nodes", "links"].forEach(function(x) {
     if (queryString[x] !== undefined) config[x] = +queryString[x];
@@ -135,27 +222,36 @@ nodes.sort(function (a,b) { return d3.descending(a._n_targets, b._n_targets); })
 
 
 
-var width = 900,
-    height = 620,
-    innerRadius = 40,
-    outerRadius = 230;
+var width = 770,
+    height = 800,
+    innerRadius = 20,
+    outerRadius = 340;
 
 var node_mag = 4;
 
 // TODO angle should be better integrated with hive axis info
 // TODO better radius integration too
-var angle = d3.scale.ordinal().domain(d3.range(4)).rangePoints([0, 2 * Math.PI]),
+var angle = d3.scale.ordinal().domain(d3.range(0,3)).rangePoints([0, 4/3 * Math.PI])
     radius = d3.scale.linear().range([innerRadius, outerRadius]),
-    color = d3.scale.ordinal().domain(d3.range(3)).range(colorbrewer.Dark2[3]),
-    n_groups = 3,
-    axis_color = d3.scale.ordinal().domain(d3.range(n_groups)).range(colorbrewer.Greys[n_groups]);
+    color = d3.scale.ordinal().domain(d3.range(3)).range(colorbrewer.Dark2[3]);
+
+//clone axes
+angle.range(angle.range().map(function (angle)
+            { return [angle, angle - Math.PI / 6]; }));
+//clone only two
+//angle.range(angle.range()
+//        .slice(0,2)
+//        .map(function (angle) { return [angle, angle - Math.PI / 6]; })
+//        .concat(angle.range()[2]))
+//triples clones?
+//angle.range(angle.range().map(function (angle) { return [angle - 0.2, angle, angle + 0.2]; }))
 
 var svg = d3.select("div#vis").append("svg")
     .attr("width", width)
     .attr("height", height)
     .attr("class", "vis")
   .append("g")
-    .attr("transform", "translate(" + width * (config.draw_force ? 2 / 3 : 1 / 2) + "," + height / 2 + ")");
+    .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
 
 
 // EXAMPLE svg grid
@@ -207,12 +303,11 @@ svg.append("text")
 
 var legends = d3.select("div#vis").append("svg")
     .attr("class", "legends")
-    .attr("width", 36 * Math.max(color.domain().length, axis_color.domain().length))
+    .attr("width", 36 * Math.max(color.domain().length))
     .attr("height", 100)
     .append("g").attr("transform", "translate(5,20)"); // margins
 
 make_legend(legends, 0, color, "node.a", "node-legend");
-make_legend(legends, 50, axis_color, "group number", "group-legend");
 function make_legend(legend, yoffset, color_map, title, class_) {
     legend.append("text")
         .attr("font-style", "italic")
@@ -250,30 +345,38 @@ function make_legend(legend, yoffset, color_map, title, class_) {
 // split(angle(d))[0 and 1]
 //
 // suggestion: no more than 3 axis or 3 pairs of cloned axis
-svg.selectAll(".axis")
+svg.selectAll("g.axis")
     // TODO get range from API, should be nested in case of groups...
     // groups could carry some form of ID, both API and user given
-    .data(d3.range(3).map(function () { return d3.range(n_groups); }))
     // TODO group drawing pattern
     // TODO group(radius(d.b)) for finding a node's group?
+    .data(angle.range())
   .enter().append("g")
+    .selectAll("line")
+    .data(function(d) { return (d instanceof Array) ? d : [d]; })
+  .enter()
+    .append("line")
     .attr("class", "axis")
-    .attr("transform", function(d, i) { return "rotate(" + degrees(angle(i)) + ")"; })
+    .attr("transform", function(d) { return "rotate(" + degrees(d) + ")"; })
+    .attr("stroke", "black")
+    .attr("x1", innerRadius)
+    .attr("x2", outerRadius);
 
-    .selectAll(".axis-group")
-    .data(function(d) {return d;})
-  .enter().append("line")
-    .attr("class", "axis-group")
-    // TODO get group amount=3 from API,
-    // and group offsets
-    .attr("stroke", axis_color)
-    .attr("stroke-width", 3)
-    //
-    .attr("x1", function(ix) { return ix === 0 ? innerRadius    : ix === 1 ?
-            innerRadius+55 : innerRadius+150 ; })
-    .attr("x2", function(ix) { return ix === 0 ? innerRadius+50 : ix === 1 ?
-            innerRadius+145 : outerRadius ; })
 
+
+var link = d3.hive.link()
+       .source(function (d) { return nodes[d.source]; })
+       .target(function (d) { return nodes[d.target]; })
+       .angle(function(d, i, link) {
+           var is_source = nodes[link.source] === d;
+               a = angle(d.a),
+               b = angle( is_source ? nodes[link.target].a
+                                    : nodes[link.source].a);
+           if (a === b)
+               return is_source ? a[1] : a[0];
+           return nearest_angle(a,b);
+       })
+       .radius(function(d) { return radius(d.b); })
 
 
 // TODO better link and node selection...
@@ -282,27 +385,47 @@ svg.selectAll(".axis")
 // TODO fix paths!!! same positions = circle segment
 
 // TODO draw colored links on top of others
+
+var opacity = 0.05 + Math.pow(links.length, -0.6);
+
 svg.selectAll(".link")
     .data(links)
   .enter().append("path")
     .on("click", toggle_select_link)
     .attr("class", function(d, i) { return "link link_" + i;})
-    .each(function(d) {
+    .attr("d", link)
+    .style("stroke", function (d, i) {
+        var src = nodes[d.source];
+        return !src.max_targets ? "#444" : color(src.a)
+    })
+    .style("stroke-opacity", function (d, i) {
+        var src = nodes[d.source];
+        return !src.max_targets ? opacity : 1;
+    })
+;
 
-        // TODO ad hoc alert!!!!!
-        // do something like this if axis is not cloned...
-    if (angle(nodes[d.source].a) === angle(nodes[d.target].a)) return;
+function min_by(f, xs) {
+    var min = xs[0];
+    xs.forEach(function(x) { if (f(x) < f(min)) {min = x;} });
+    return min; }
 
-    d3.select(this)
-    .attr("d", d3.hive.link()
-    .source(function (d) { return nodes[d.source]; })
-    .target(function (d) { return nodes[d.target]; })
-    .angle(function(d) { return angle(d.a); })
-    .radius(function(d) { return radius(d.b); }))
-    .style("stroke", function(d) { return !nodes[d.source].max_targets ?
-        "#444" : color(nodes[d.source].a); });
-  });
+function snd(x){ return x[1]; }
 
+// overkill for 6 axes...
+// should have more structured angle.range().
+function nearest_angle(angles_a, angles_b) {
+    if (!(angles_a instanceof Array)) { angles_a = [angles_a]; }
+    if (!(angles_b instanceof Array)) { angles_b = [angles_b]; }
+
+    /* i know this looks bad... but angle.range() is supposed to be a small array */
+    // find the pair of angles with minimal separation
+    return min_by(snd, angles_a.map(function (a) {
+    return min_by(snd, angles_b.map(function (b) {
+        ////////////// TODO HACKY !!!!!!!!!!!!!!!!!!!!!!
+            return [a, Math.abs(a - b) % (Math.PI/2)];
+        }))
+    }))[0];
+}
 
 // TODO option: node size encoding (ala jhive)
 // TODO nodes currently take discrete positions
@@ -310,21 +433,35 @@ svg.selectAll(".link")
 // or make links thicker and more transparent as they become bunched up
 // (for large number of nodes)
 if (draw_nodes)
-svg.selectAll(".node")
+svg.selectAll("g.node")
     .data(nodes)
-  .enter().append("rect")
-    .attr("class", function(d, i) { return "node node_" + i;})
-    .attr("transform", function(d) { return "rotate(" + degrees(angle(d.a)) + ")"; })
+  .enter()
+    .append("g")
+    .attr("class", "node")
+    .each(function(d, i) {
+        var elem = d3.select(this);
+        if (angle(d.a) instanceof Array)
+            angle(d.a).forEach(function (angle) { draw_node(d, i, elem, angle) })
+        else
+            draw_node(d, i, elem, angle(d.a));
+    })
+    .on("click", toggle_select_node);
+
+function draw_node(d, i, elem, angle) {
+    elem.append("rect")
+    .attr("class", "node node_" + i)
+    .attr("transform", "rotate(" + degrees(angle) + ")" )
     // TODO get width=12 from API, y is aesthetic
     // TODO have fill empty space or empty group space settings
-    .attr("x", function(d) { return radius(d.b) - node_mag/2; })
+    .attr("x", radius(d.b) - node_mag/2 )
     .attr("y", -6/2)
     .attr("height", 6)
     .attr("width", node_mag)
-    .style("fill", function(d) { return color(d.a); })
-    .on("click", toggle_select_node);
+    .style("fill", color(d.a) )
+}
+
 function degrees(radians) {
-  return radians / Math.PI * 180 - 90;
+  return radians / Math.PI * 180;
 }
 
 
@@ -362,83 +499,37 @@ function toggle_select_link(d, i) {
 
 
 
-
-
-
+function avg_or_id(d) {
+    return (d instanceof Array) ? d.reduce(function(a,b){return a+b;}) / d.length : d;
+}
 
 // EXAMPLE axis labels
-svg.selectAll("text.axis-label")
-    .data(d3.range(3))
-  .enter().append("text")
-    .style("stroke", "none")
-    .attr("fill", "black")
-    .attr("class", "axis-label")
-    .attr("font-size", "0.8em")
-    .style("font-weight", "bold")
-    .attr("text-anchor", "middle")
-    .attr("x", function(d) { return Math.cos(-Math.PI/2 + angle(d)) * (innerRadius - 14); })
-    .attr("y", function(d) { return Math.sin(-Math.PI/2 + angle(d)) * (innerRadius - 14); })
-    .text(function(d) { return d; })
-    ;
-
-
-svg
+svg.selectAll("g.axis-angle")
+    .data(angle.range())
+  .enter()
+    .append('g')
+    .attr("class", "axis-angle")
+    .selectAll('text.axis-angle')
+    .data(function(d) { return (d instanceof Array) ? d : [d]; })
+  .enter()
     .append("text")
-    .attr("text-anchor", "middle")
-    .attr("font-size", "0.8em")
-    .attr("font-style", "italic")
-    .attr("y", -4) //eeek
-    .text("node.a");
+    .attr("class", "axis-angle")
+    .attr("x", function(d){ return Math.cos(d) * (outerRadius + 18); })
+    .attr("y", function(d){ return Math.sin(d) * (outerRadius + 18); })
+    .text(function(d) { return Math.round(degrees(d))+'°'; })
 
 
+svg.selectAll("text.axis-label")
+    .data(angle.domain())
+  .enter()
+    .append("text")
+    .attr("class", "axis-label")
+    .attr("x", function(d){ return Math.cos(avg_or_id(angle(d))) * (outerRadius + 40); })
+    .attr("y", function(d){ return Math.sin(avg_or_id(angle(d))) * (outerRadius + 40); })
+    .text(function(d) { return 'a=' + d; })
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//////////////////////////////////////////////// Hive plots over
-
-
-
-
-
-
-
-
-
-
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /* FORCE DIRECTED LAYOUT */
 if (draw_force) {
@@ -448,13 +539,16 @@ if (draw_force) {
 var force = d3.layout.force()
     .nodes(d3.values(nodes))
     .links(links_force)
-    .size([width/3, height])
+    .size([width/2, height/2])
     .linkDistance(60)
     .charge(-300)
     .on("tick", tick)
     .start();
 
-var svg_force = d3.select("svg.vis").append("g");
+var svg_force = d3.select("div#vis_force").append("svg")
+    .attr("width", width/2)
+    .attr("height", height/2)
+    .attr("class", "vis_force")
 
 // Per-type markers, as they don't inherit styles.
 svg_force.append("defs").selectAll("marker")
@@ -475,7 +569,8 @@ var path = svg_force.append("g").selectAll("path.link")
     .data(force.links())
   .enter().append("path")
     .attr("class", function (d,i) { return "link link_" + i; })
-    .style("stroke", function(d) { return !d.source.max_targets ? "#444" : color(d.source.a); })
+    .style("stroke", function(d) { return !d.source.max_targets ?
+        "#444" : color(d.source.a); })
     .attr("marker-end", function (d) { return "url(#"
         + (!d.source.max_targets ? "#444" : color(d.source.a)) + ")"; })
     .on("click", toggle_select_link);
@@ -491,8 +586,8 @@ var circle = svg_force.append("g").selectAll("circle.node")
 
 svg_force.append("text")
     .attr("fill", "black")
-    .attr("y", height / 6)
-    .attr("x", width / 6)
+    .attr("y", height / 12)
+    .attr("x", width / 12)
     .attr("font-size", "0.8em")
     .attr("font-style", "italic")
     .attr("text-anchor", "middle")
@@ -520,38 +615,6 @@ function transform(d) {
 
 
 
-
-
-
-/* Graph generation */
-/* "curated" graph
-var nodes = [
-  {a: 0, b: .1},
-  {a: 0, b: .2},
-  {a: 0, b: .9},
-  {a: 1, b: .2},
-  {a: 1, b: .3},
-  {a: 2, b: .1},
-  {a: 2, b: .8},
-  {a: 2, b: .95}
-];
-
-var links = [
-  {source: nodes[0], target: nodes[3]},
-  {source: nodes[1], target: nodes[0]},
-  {source: nodes[1], target: nodes[2]},
-  {source: nodes[1], target: nodes[3]},
-  {source: nodes[1], target: nodes[4]},
-  {source: nodes[1], target: nodes[5]},
-  {source: nodes[1], target: nodes[6]},
-  {source: nodes[2], target: nodes[2]},
-  {source: nodes[3], target: nodes[5]},
-  {source: nodes[3], target: nodes[6]},
-  {source: nodes[4], target: nodes[6]},
-  {source: nodes[5], target: nodes[0]},
-  {source: nodes[6], target: nodes[2]}
-];
-*/
 
 function random_nodes(min, max) {
     if (arguments.length !== 2) {
