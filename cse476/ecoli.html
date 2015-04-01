@@ -17,14 +17,6 @@ body {
 <script src="lib/d3.v3.min.js"></script>
 <script>
 
-// From http://mkweb.bcgsc.ca/circos/guide/tables/
-var matrix = [
-  [11975,  5871, 8916, 2868],
-  [ 1951, 10048, 2060, 6171],
-  [ 8010, 16145, 8090, 8045],
-  [ 1013,   990,  940, 6907]
-];
-
 var width = 960,
     height = 500,
     innerRadius = Math.min(width, height) * .41,
@@ -40,7 +32,46 @@ var svg = d3.select("body").append("svg")
   .append("g")
     .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
 
-d3.json('l.json', function(error, data) {
+d3.json('reg.json', function(error, graph) {
+  var force = d3.layout.force()
+        .charge(-120)
+        .linkDistance(30)
+        .size([width, height]);
+
+    console.log(graph);
+  force
+      .nodes(graph.nodes)
+      .links(graph.links)
+      .start();
+
+    console.log(graph);
+
+  var link = svg.selectAll(".link")
+      .data(graph.links)
+    .enter().append("line")
+      .attr("class", "link")
+      //.style("stroke-width", function(d) { return Math.sqrt(d.value); })
+      ;
+
+  var node = svg.selectAll(".node")
+      .data(graph.nodes)
+    .enter().append("circle")
+      .attr("class", "node")
+      .attr("r", 5)
+      ;
+
+  node.append("title")
+      .text(function(d) { return d.name; });
+
+  force.on("tick", function() {
+    link.attr("x1", function(d) { return d.source.x; })
+        .attr("y1", function(d) { return d.source.y; })
+        .attr("x2", function(d) { return d.target.x; })
+        .attr("y2", function(d) { return d.target.y; });
+
+    node.attr("cx", function(d) { return d.x; })
+        .attr("cy", function(d) { return d.y; });
+  });
 });
 
 
