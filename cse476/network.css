@@ -1,0 +1,42 @@
+
+.link {
+  fill: none;
+  stroke-width:1.5px;
+}
+
+.node {
+  stroke-width: 0;
+}
+
+g.grid circle {
+    stroke: lightgrey;
+    stroke-dasharray: 20,10;
+    fill: none;
+}
+
+.axis {
+    stroke: lightgrey;
+    stroke-width: 3px;
+}
+
+text.axis-label, text.axis-angle {
+    stroke: none;
+    fill: black;
+    font-size: 0.8em;
+    text-anchor: middle;
+}
+text.axis-label {font-weight: bold}
+
+body {
+    text-align: center;
+    min-width: 900px;
+}
+
+.legend-title {
+    font-style: italic;
+    font-size: 1em;
+}
+.legend-elem {
+    font-size: 0.9em;
+}
+

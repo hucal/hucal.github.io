@@ -1,0 +1,614 @@
+<!doctype html>
+<html class="no-js" lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>CSE476 Projects</title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+
+        <link rel="stylesheet" href="../css/normalize.css">
+        <link rel="stylesheet" href="../css/main.css">
+        <script src="../js/vendor/modernizr-2.8.3.min.js"></script>
+<!--
+Nested selections for axis groups: http://bost.ocks.org/mike/nest/
+HP article:
+http://bib.oxfordjournals.org/content/early/2011/12/09/bib.bbr069.full
+
+http://www.hiveplot.net/
+also the intro 1 and 2 PDFs
+and the 3 D3 examples
+
+--!>
+
+<style>
+
+.link {
+  fill: none;
+  stroke-width:2px;
+  stroke-opacity: 0.6;
+}
+
+.axis, .node {
+  stroke-width: 1.5px;
+}
+
+body {
+    text-align: center;
+        min-width: 900px;
+}
+
+</style>
+    </head>
+    <body>
+        <!--[if lt IE 8]>
+            <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+        <![endif]-->
+
+        <p><a href=http://hiveplot.net/>Hive Plot</a> and Force Layout brushing
+        visualization.
+        Click nodes and links on either vis.
+        Data is randomly generated on page load.
+        <p>To change graph config, use the query string. UI will be improved...</p>
+        <p><a href=hp_force.html?nodes=30&links=50>nodes=30, links=50</a></p>
+        <p><a href=hp_force.html?nodes=60&links=100&draw_nodes=0>nodes=60, links=100, and
+        don't draw HP nodes</a></p>
+        <p><a href=hp_force.html?nodes=200&links=400&draw_force=0&draw_nodes=0>nodes=200, links=400,
+        don't draw HP nodes, and don't draw Force Layout</a></p>
+        <div id="vis"></div>
+        <div class="hfill"/>
+        <br/>
+        <h2>Data dump</h2>
+        <div id="data-dump"></div>
+
+<script src="lib/jquery-1.10.2.min.js"></script>
+<script src="lib/colorbrewer.js"></script>
+<script src="lib/d3.v3.min.js"></script>
+<script src="lib/d3.hive.v0.min.js"></script>
+<script>
+
+// TODO use lasso to select many nodes
+
+// TODO nice labels + overlapping links
+// http://geotheory.co.uk/blog/wp-content/uploads/2013/10/Spad_Hospitality.png
+
+// TODO rewrite D3 flare imports example using the new group API
+
+// TODO demonstrate links between bar plots and filled HPs
+
+// TODO tour guide
+// http://clu3.github.io/bootstro.js/ BOOTSTRO!!!!
+// highlight node axis with big letter on a white circle, stroke=black
+// demonstrate node/axis/group highlighting
+
+// TODO have a legend for colors, node positions
+
+// TODO normalized and absolute node position (special for hive panels)
+//  axis size <====> extreme node positions
+
+// TODO use D3 transitions for network comparisons
+// TODO use svg to make nice hive panels
+
+/* graph creation */
+// TODO links should operate off references to nodes, not copies of nodes
+// use this for a better selection highlighting (highlighted nodes show their links, vice versa)
+
+// read query string, from Stackoverflow somewhere...
+var queryString = {};
+location.search.substr(1)
+    .split("&").forEach(function(item)
+            {queryString[item.split("=")[0]] = item.split("=")[1]});
+
+var config = {nodes: 10, links: 20, draw_nodes: true, draw_force: true};
+
+["nodes", "links"].forEach(function(x) {
+    if (queryString[x] !== undefined) config[x] = +queryString[x];
+});
+["draw_nodes", "draw_force"].forEach(function(x) {
+    if (queryString[x] !== undefined) config[x] = !config[x];
+});
+
+// TODO node classification functions
+// cc, nn, ccnn, degree, user-defined
+var nodes = random_nodes(config.nodes, config.nodes);
+var links = random_links(nodes, config.links/2, config.links/2, randint);
+links = links.concat(random_links(nodes, config.links/2, config.links/2,
+            mk_randint_normal(0, nodes.length - 1)));
+
+$("div#data-dump").text(JSON.stringify({nodes:nodes, links:links}, null, 2));
+
+var draw_nodes = config.draw_nodes;
+var draw_force = config.draw_force;
+
+var target_counts = Array(nodes.length);
+var has_max_targets = 0;
+nodes.forEach(function(n, i) { n._selected = false; n._n_targets = 0; n.max_targets = false;});
+links.forEach(function(l) {
+    l._selected = false;
+    nodes[l.source]._n_targets++ >= nodes[has_max_targets]._n_targets;
+});
+
+nodes.sort(function (a,b) { return d3.descending(a._n_targets, b._n_targets); })
+     .slice(0,3).forEach(function (max_node) { max_node.max_targets = true; });
+
+
+
+var width = 900,
+    height = 620,
+    innerRadius = 40,
+    outerRadius = 230;
+
+var node_mag = 4;
+
+// TODO angle should be better integrated with hive axis info
+// TODO better radius integration too
+var angle = d3.scale.ordinal().domain(d3.range(4)).rangePoints([0, 2 * Math.PI]),
+    radius = d3.scale.linear().range([innerRadius, outerRadius]),
+    color = d3.scale.ordinal().domain(d3.range(3)).range(colorbrewer.Dark2[3]),
+    n_groups = 3,
+    axis_color = d3.scale.ordinal().domain(d3.range(n_groups)).range(colorbrewer.Greys[n_groups]);
+
+var svg = d3.select("div#vis").append("svg")
+    .attr("width", width)
+    .attr("height", height)
+    .attr("class", "vis")
+  .append("g")
+    .attr("transform", "translate(" + width * (config.draw_force ? 2 / 3 : 1 / 2) + "," + height / 2 + ")");
+
+
+// EXAMPLE svg grid
+svg.selectAll(".grid")
+    .data(radius.ticks(5))
+  .enter().append("g")
+    .attr("class", "grid")
+    .each(function (d) {
+
+    d3.select(this).append("circle")
+    .attr("r", radius(d))
+    .style("stroke", "lightgrey")
+    .attr("stroke-dasharray", "20,10")
+    .style("fill", "none")
+
+    d3.select(this).append("rect")
+    .attr("fill", "white")
+    .attr("height", 16)
+    .attr("width", 16)
+    .attr("fill-opacity", 0.8)
+    .attr("x", Math.cos(Math.PI/4) * radius(d))
+    .attr("y", -13 -Math.sin(Math.PI/4) * radius(d))
+    ;
+
+    d3.select(this).append("text")
+    .attr("fill", "black")
+    .attr("font-size", "0.6em")
+    .attr("x", Math.cos(Math.PI/4) * radius(d))
+    .attr("y", -Math.sin(Math.PI/4) * radius(d))
+    .text(d)
+    ;
+    });
+
+svg.append("text")
+    .attr("class", "grid-label")
+    .attr("fill", "black")
+    .attr("x", Math.cos(Math.PI/4) *  (20 + radius(radius.domain()[1])))
+    .attr("y", -Math.sin(Math.PI/4) * (20 + radius(radius.domain()[1])))
+    .attr("font-size", "0.8em")
+    .attr("font-style", "italic")
+    .text("node.b");
+
+
+
+
+
+
+
+
+var legends = d3.select("div#vis").append("svg")
+    .attr("class", "legends")
+    .attr("width", 36 * Math.max(color.domain().length, axis_color.domain().length))
+    .attr("height", 100)
+    .append("g").attr("transform", "translate(5,20)"); // margins
+
+make_legend(legends, 0, color, "node.a", "node-legend");
+make_legend(legends, 50, axis_color, "group number", "group-legend");
+function make_legend(legend, yoffset, color_map, title, class_) {
+    legend.append("text")
+        .attr("font-style", "italic")
+        .attr("font-size", 12)
+        .attr("y", yoffset)
+        .text(title);
+
+    legend = legend.selectAll("g." + class_)
+        .data(color_map.domain())
+      .enter().append("g")
+        .attr("class", class_)
+        .attr("transform", function(d, i)
+            { return "translate(" + (i * 32) +"," + (15 + yoffset) + ")"; })
+        ;
+
+    legend.append("text")
+        .attr("fill", "black")
+        .attr("font-size", "12px")
+        .attr("y", -2)
+        .text(function(d) {return d;});
+
+    legend.append("rect")
+        .attr("fill", function(d) { return color_map(d); })
+        .attr("width", 15)
+        .attr("height", 15);
+}
+
+
+
+
+
+
+// TODO allow reversing of axis or group segments
+// TODO axis cloning facilities...
+// split(angle(d))[0 and 1]
+//
+// suggestion: no more than 3 axis or 3 pairs of cloned axis
+svg.selectAll(".axis")
+    // TODO get range from API, should be nested in case of groups...
+    // groups could carry some form of ID, both API and user given
+    .data(d3.range(3).map(function () { return d3.range(n_groups); }))
+    // TODO group drawing pattern
+    // TODO group(radius(d.b)) for finding a node's group?
+  .enter().append("g")
+    .attr("class", "axis")
+    .attr("transform", function(d, i) { return "rotate(" + degrees(angle(i)) + ")"; })
+
+    .selectAll(".axis-group")
+    .data(function(d) {return d;})
+  .enter().append("line")
+    .attr("class", "axis-group")
+    // TODO get group amount=3 from API,
+    // and group offsets
+    .attr("stroke", axis_color)
+    .attr("stroke-width", 3)
+    //
+    .attr("x1", function(ix) { return ix === 0 ? innerRadius    : ix === 1 ?
+            innerRadius+55 : innerRadius+150 ; })
+    .attr("x2", function(ix) { return ix === 0 ? innerRadius+50 : ix === 1 ?
+            innerRadius+145 : outerRadius ; })
+
+
+
+// TODO better link and node selection...
+// by axis, by group, select multiple (ctrl, shift, mobile controls..), by nodes
+
+// TODO fix paths!!! same positions = circle segment
+
+// TODO draw colored links on top of others
+svg.selectAll(".link")
+    .data(links)
+  .enter().append("path")
+    .on("click", toggle_select_link)
+    .attr("class", function(d, i) { return "link link_" + i;})
+    .each(function(d) {
+
+        // TODO ad hoc alert!!!!!
+        // do something like this if axis is not cloned...
+    if (angle(nodes[d.source].a) === angle(nodes[d.target].a)) return;
+
+    d3.select(this)
+    .attr("d", d3.hive.link()
+    .source(function (d) { return nodes[d.source]; })
+    .target(function (d) { return nodes[d.target]; })
+    .angle(function(d) { return angle(d.a); })
+    .radius(function(d) { return radius(d.b); }))
+    .style("stroke", function(d) { return !nodes[d.source].max_targets ?
+        "#444" : color(nodes[d.source].a); });
+  });
+
+
+// TODO option: node size encoding (ala jhive)
+// TODO nodes currently take discrete positions
+// make connections somehow spread out evenly across the axis
+// or make links thicker and more transparent as they become bunched up
+// (for large number of nodes)
+if (draw_nodes)
+svg.selectAll(".node")
+    .data(nodes)
+  .enter().append("rect")
+    .attr("class", function(d, i) { return "node node_" + i;})
+    .attr("transform", function(d) { return "rotate(" + degrees(angle(d.a)) + ")"; })
+    // TODO get width=12 from API, y is aesthetic
+    // TODO have fill empty space or empty group space settings
+    .attr("x", function(d) { return radius(d.b) - node_mag/2; })
+    .attr("y", -6/2)
+    .attr("height", 6)
+    .attr("width", node_mag)
+    .style("fill", function(d) { return color(d.a); })
+    .on("click", toggle_select_node);
+function degrees(radians) {
+  return radians / Math.PI * 180 - 90;
+}
+
+
+
+
+
+
+
+
+function toggle_select_node(d, i) {
+    d._selected = !d._selected;
+    if (d._selected) {
+        d3.selectAll(".node_" + i)
+        .style("stroke", "black")
+        .style("stroke-width", 3);
+    } else {
+        d3.selectAll(".node_" + i)
+        .style("stroke", "none");
+    }
+}
+
+function toggle_select_link(d, i) {
+    d._selected = !d._selected;
+    if (d._selected) {
+        d3.selectAll(".link_" + i)
+        .style("stroke-width", 7);
+    } else {
+        d3.selectAll(".link_" + i)
+        .style("stroke-width", 1.5);
+    }
+}
+
+
+
+
+
+
+
+
+
+
+// EXAMPLE axis labels
+svg.selectAll("text.axis-label")
+    .data(d3.range(3))
+  .enter().append("text")
+    .style("stroke", "none")
+    .attr("fill", "black")
+    .attr("class", "axis-label")
+    .attr("font-size", "0.8em")
+    .style("font-weight", "bold")
+    .attr("text-anchor", "middle")
+    .attr("x", function(d) { return Math.cos(-Math.PI/2 + angle(d)) * (innerRadius - 14); })
+    .attr("y", function(d) { return Math.sin(-Math.PI/2 + angle(d)) * (innerRadius - 14); })
+    .text(function(d) { return d; })
+    ;
+
+
+svg
+    .append("text")
+    .attr("text-anchor", "middle")
+    .attr("font-size", "0.8em")
+    .attr("font-style", "italic")
+    .attr("y", -4) //eeek
+    .text("node.a");
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//////////////////////////////////////////////// Hive plots over
+
+
+
+
+
+
+
+
+
+
+
+/* FORCE DIRECTED LAYOUT */
+if (draw_force) {
+    // this layout modifies the links array, give it a deep copy
+    var links_force = $.extend(true, [], links);
+
+var force = d3.layout.force()
+    .nodes(d3.values(nodes))
+    .links(links_force)
+    .size([width/3, height])
+    .linkDistance(60)
+    .charge(-300)
+    .on("tick", tick)
+    .start();
+
+var svg_force = d3.select("svg.vis").append("g");
+
+// Per-type markers, as they don't inherit styles.
+svg_force.append("defs").selectAll("marker")
+    .data(color.range().concat(["#444"]))
+  .enter().append("marker")
+    .attr("id", function(d) { return d; })
+    .attr("viewBox", "0 -5 10 10")
+    .attr("refX", 15)
+    .attr("refY", -1.5)
+    .attr("markerWidth", 6)
+    .attr("markerHeight", 6)
+    .attr("orient", "auto")
+    .attr("fill", function (d) { return d; })
+  .append("path")
+    .attr("d", "M0,-5L10,0L0,5");
+
+var path = svg_force.append("g").selectAll("path.link")
+    .data(force.links())
+  .enter().append("path")
+    .attr("class", function (d,i) { return "link link_" + i; })
+    .style("stroke", function(d) { return !d.source.max_targets ? "#444" : color(d.source.a); })
+    .attr("marker-end", function (d) { return "url(#"
+        + (!d.source.max_targets ? "#444" : color(d.source.a)) + ")"; })
+    .on("click", toggle_select_link);
+
+var circle = svg_force.append("g").selectAll("circle.node")
+    .data(force.nodes())
+  .enter().append("circle")
+    .attr("class", function (d,i) { return "node node_" + i; })
+    .attr("r", function (d) { return Math.sqrt(100 * d.b) + 1; })
+    .attr("fill", function (d) { return color(d.a); })
+    .call(force.drag)
+    .on("click", toggle_select_node);
+
+svg_force.append("text")
+    .attr("fill", "black")
+    .attr("y", height / 6)
+    .attr("x", width / 6)
+    .attr("font-size", "0.8em")
+    .attr("font-style", "italic")
+    .attr("text-anchor", "middle")
+    .text("node.b ↔ node area");
+
+
+}
+// Use elliptical arc path segments to doubly-encode directionality.
+function tick() {
+  path.attr("d", linkArc);
+  circle.attr("transform", transform);
+}
+
+function linkArc(d) {
+  var dx = d.target.x - d.source.x,
+      dy = d.target.y - d.source.y,
+      dr = Math.sqrt(dx * dx + dy * dy);
+  return "M" + d.source.x + "," + d.source.y + "A" + dr + "," + dr + " 0 0,1 " + d.target.x + "," + d.target.y;
+}
+
+function transform(d) {
+  return "translate(" + d.x + "," + d.y + ")";
+}
+
+
+
+
+
+
+
+/* Graph generation */
+/* "curated" graph
+var nodes = [
+  {a: 0, b: .1},
+  {a: 0, b: .2},
+  {a: 0, b: .9},
+  {a: 1, b: .2},
+  {a: 1, b: .3},
+  {a: 2, b: .1},
+  {a: 2, b: .8},
+  {a: 2, b: .95}
+];
+
+var links = [
+  {source: nodes[0], target: nodes[3]},
+  {source: nodes[1], target: nodes[0]},
+  {source: nodes[1], target: nodes[2]},
+  {source: nodes[1], target: nodes[3]},
+  {source: nodes[1], target: nodes[4]},
+  {source: nodes[1], target: nodes[5]},
+  {source: nodes[1], target: nodes[6]},
+  {source: nodes[2], target: nodes[2]},
+  {source: nodes[3], target: nodes[5]},
+  {source: nodes[3], target: nodes[6]},
+  {source: nodes[4], target: nodes[6]},
+  {source: nodes[5], target: nodes[0]},
+  {source: nodes[6], target: nodes[2]}
+];
+*/
+
+function random_nodes(min, max) {
+    if (arguments.length !== 2) {
+        min = 5;
+        max = 10;
+    }
+    var nodes = d3.range(randint(min, max));
+    nodes = nodes.map(function () {
+        d = {
+        a: randint(0,3),
+        b: randint(5, 100) / 100};
+        return d;
+    });
+    return nodes;
+}
+
+function random_links(nodes, min, max, rand_node_picker) {
+    // only one argument? then E = 2V
+    if (arguments.length === 1) {
+        min = nodes.length;
+        max = min;
+        rand_node_picker = randint;
+    }
+    var links = d3.range(randint(min, max));
+    links = links.map(function() {
+        d = {
+        source: rand_node_picker(0, nodes.length),
+        target: rand_node_picker(0, nodes.length),
+        }
+        return d;
+    });
+    if (arguments.length === 1)
+        nodes.forEach(function (node, node_ix) {
+            var sink = Math.random() > 0.5;
+            links.push({
+            source: sink ? node_ix : randint(0, nodes.length),
+            target: sink ? randint(0, nodes.length) : node_ix,
+            });
+        });
+    return links;
+}
+
+function randint(min, max) { return min === max ?
+    max : min + Math.floor(Math.random() * (max - min)); }
+
+function mk_randint_normal(min, max) {
+    var dist = d3.random.normal((min + max) / 2,
+            Math.sqrt((max - min) * (max - min) / 12));
+    return function() {
+        return min === max ?
+        max : clamp(min, max, Math.floor(dist()));
+    }
+}
+
+function clamp(min, max, x) { return x < min ? min : x > max ? max : x; }
+
+</script>
+</body>
+</html>
+

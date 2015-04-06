@@ -1,0 +1,122 @@
+<!doctype html>
+<html class="no-js" lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>Hive Plot of E. Coli and Linux Networks</title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+
+        <link rel="stylesheet" href="../css/normalize.css">
+        <link rel="stylesheet" href="../css/main.css">
+        <link rel="stylesheet" href="network.css">
+        <script src="../js/vendor/modernizr-2.8.3.min.js"></script>
+    </head>
+    <body>
+        <!--[if lt IE 8]>
+            <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+        <![endif]-->
+        <h1>Data: E. Coli Gene Regulation Network</h1>
+        <p>From RegulonDB</p>
+        <p>Node placement along axis: degree</p>
+        <p>Axis categories: in, out, in/out</p>
+        <div id="vis"></div>
+
+<script src="lib/jquery-1.10.2.min.js"></script>
+<script src="lib/colorbrewer.js"></script>
+<script src="lib/d3.v3.min.js"></script>
+<script src="d3.hive.v0.dev.js"></script>
+<script src="hp.js"></script>
+<script>
+
+
+
+var width = 770,
+    height = 800,
+    innerRadius = 20,
+    outerRadius = 340,
+    node_height = 2,
+    node_width = 6;
+
+// prepare SVG document
+var svg = d3.select("div#vis").append("svg")
+    .attr("width", width)
+    .attr("height", height)
+    .attr("class", "vis")
+  .append("g")
+    .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+
+
+d3.json("ecoli.json", function (error, graph) {
+    if (error) { console.log(error); return; }
+
+    console.log(graph.nodes, graph.links);
+    by_obj_to_ix(graph.nodes, graph.links);
+
+    extrema = find_degree(graph.nodes, graph.links);
+    var min_deg = graph.nodes[extrema[0]],
+        max_deg = graph.nodes[extrema[1]];
+
+    console.log(extrema);
+    graph.nodes[extrema[1]].max_targets = true;
+
+    console.log(min_deg, max_deg);
+    var angle = d3.scale.ordinal().domain(d3.range(0,3))
+            .rangePoints([0, 4/3 * Math.PI]),
+        radius = d3.scale.linear()
+            .range ([innerRadius, outerRadius])
+            .domain([min_deg.deg, max_deg.deg])
+            ;
+            //.range([innerRadius, outerRadius]);
+
+    //clone axes
+    var rng = angle.range();
+    rng[0] = [rng[0], rng[0] + Math.PI / 6];
+    rng[2] = [rng[2]];
+    rng[1] = [rng[1]];
+    angle.range(rng);
+
+    draw_hive_plot(svg, angle, radius, graph.nodes, graph.links, true,
+            toggle_select_node, toggle_select_link,
+            function(d) { return radius(d.deg); },
+            function(d) { return angle(
+                (d.deg_in === 0 && d.deg_out > 0) ? 1 :
+                (d.deg_out === 0 && d.deg_in > 0) ? 2 :
+                0
+                ); },
+            function(d) { return "blue"; });
+
+
+    svg.selectAll("circle.grid")
+        .data(radius.ticks(7))
+      .enter().append("g")
+        .attr("class", "grid")
+        .append("circle")
+        .attr("r", function (d) { return radius(d); });
+
+});
+
+
+
+
+//TODO  use quick node size animation to double highlight
+function toggle_select_node(d, i) {
+    if (d._selected = !d._selected)
+        d3.selectAll(".node_" + i).style("stroke", "black").style("stroke-width", 6);
+    else
+        d3.selectAll(".node_" + i).style("stroke", "none");
+}
+
+function toggle_select_link(d, i) {
+    if (d._selected = !d._selected)
+        d3.selectAll(".link_" + i).style("stroke-width", 7);
+    else
+        d3.selectAll(".link_" + i).style("stroke-width", 2);
+}
+
+</script>
+</body>
+</html>
+

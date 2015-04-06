@@ -29,8 +29,8 @@ def regulon_json_converter(csvs, header, fname, output):
     nodes = []
     links_tmp = []
 
-    target_ix = header.index('PROMOTER_ID')
-    source_ix = header.index('CONFORMATION_ID')
+    target_ix = header.index('RI_FIRST_GENE_ID')
+    source_ix = header.index('SITE_ID')
     for row in csvs:
         source = row[source_ix]
         target = row[target_ix]
