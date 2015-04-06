@@ -74,8 +74,7 @@ function draw_hive_plot(svg, angle, radius, nodes, links, draw_nodes,
         .data(links)
       .enter().append("path")
         .attr("class", function(d, i) { return "link link_" + i;})
-        .style("stroke", function(d) { return !nodes[d.source].max_targets ?
-            "lightgrey" : color_prop(nodes[d.source].a); })
+        .style("stroke", function(d, i) {return color_prop(d, i, true)})
         .style("stroke-opacity", opacity)
         .on("click", toggle_select_link)
         .attr("d", link)

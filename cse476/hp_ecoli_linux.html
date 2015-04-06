@@ -79,14 +79,17 @@ d3.json("ecoli.json", function (error, graph) {
     angle.range(rng);
 
     draw_hive_plot(svg, angle, radius, graph.nodes, graph.links, true,
-            toggle_select_node, toggle_select_link,
-            function(d) { return radius(d.deg); },
-            function(d) { return angle(
-                (d.deg_in === 0 && d.deg_out > 0) ? 1 :
-                (d.deg_out === 0 && d.deg_in > 0) ? 2 :
-                0
-                ); },
-            function(d) { return "blue"; });
+        toggle_select_node, toggle_select_link,
+        function(d) { return radius(d.deg); },
+        function(d) { return angle(
+            (d.deg_in === 0 && d.deg_out > 0) ? 1 :
+            (d.deg_out === 0 && d.deg_in > 0) ? 2 :
+            0
+            ); },
+        function(d, i, islink) {
+            if (islink) d = graph.nodes[d.source];
+            return (d.max_targets && islink) ? "blue" : "lightgrey";
+        });
 
 
     svg.selectAll("circle.grid")

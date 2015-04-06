@@ -147,10 +147,13 @@ var svg = d3.select("div#vis").append("svg")
 
 
 draw_hive_plot(svg, angle, radius, nodes, links, config.draw_nodes,
-            toggle_select_node, toggle_select_link,
-            function(d) { return radius(d.b); },
-            function(d) { return angle(d.a); },
-            function(d) { return color(d.a); });
+    toggle_select_node, toggle_select_link,
+    function(d) { return radius(d.b); },
+    function(d) { return angle(d.a); },
+    function(d, i, islink) {
+        if (islink) d = nodes[d.source];
+        return (d.max_targets && islink) ? color(d.a) : "lightgrey";
+    });
 
 // EXAMPLE svg grid
 svg.selectAll("circle.grid")
