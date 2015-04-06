@@ -88,7 +88,7 @@ d3.json("ecoli.json", function (error, graph) {
             ); },
         function(d, i, islink) {
             if (islink) d = graph.nodes[d.source];
-            return (d.max_targets && islink) ? "blue" : "lightgrey";
+            return !islink ? color(d.a) : d.max_targets ? color(d.a) : "lightgrey";
         });
 
 
