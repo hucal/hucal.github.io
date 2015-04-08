@@ -80,7 +80,7 @@ function draw_hive_plot(svg, angle, radius, nodes, links, draw_nodes,
         .attr("d", link)
     ;
 
-    function min_with(xs, f) {
+    function min_with(f, xs) {
         var min = xs[0];
         xs.forEach(function(x) {
             if (f(x) < f(min)) min = x;
@@ -95,11 +95,10 @@ function draw_hive_plot(svg, angle, radius, nodes, links, draw_nodes,
     function nearest_angle(angles_a, angles_b) {
         /* i know this looks bad... but angle.range() is supposed to be a small array */
         // find the pair of angles with minimal separation
-        return min_with(angles_a.map(function (a) {
-        return min_with(angles_b.map(function (b) {
+        return min_with(snd, angles_a.map(function (a) {
+        return min_with(snd, angles_b.map(function (b) {
                 return [a, Math.abs(a - b)%(Math.PI/2)];
-        }), snd);
-        }), snd)[0];
+        })); }))[0];
     }
 
     // TODO option: node size encoding (ala jhive)

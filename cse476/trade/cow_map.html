@@ -1,0 +1,89 @@
+<!doctype html>
+<html class='no-js' lang='en'>
+    <head>
+        <meta charset='utf-8'>
+        <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+        <title>D3 Map, COW Data</title>
+        <meta name='description' content=''>
+        <meta name='viewport' content='width=device-width, initial-scale=1'>
+
+        <link rel='apple-touch-icon' href='../../apple-touch-icon.png'>
+
+        <link rel='stylesheet' href='../../css/normalize.css'>
+        <link rel='stylesheet' href='../../css/main.css'>
+        <link rel='stylesheet' href='style.css'>
+        <script src='../../js/vendor/modernizr-2.8.3.min.js'></script>
+<style>
+body {
+    width: 900px;
+    margin: 0 auto;
+}
+
+#geo_vis {
+    margin: 0 auto;
+}
+
+.feature {
+  stroke: black;
+  stroke-width: 0.5px;
+}
+
+.background {
+    fill: white;
+}
+</style>
+    </head>
+    <body>
+        <!--[if lt IE 8]>
+            <p class='browserupgrade'>You are using an <strong>outdated</strong> browser. Please <a href='http://browsehappy.com/'>upgrade your browser</a> to improve your experience.</p>
+        <![endif]-->
+
+        <p>Click Russia.</p>
+        <p>Can change data sets, same as <a href=bilateral_sankey.html>this other draft vis</a></p>
+
+            <button>add vis</button>
+    <table id='controls'>
+        <tr>
+            <td><button>&lt;&lt;</button></td>
+            <td><select><option>switch year</option></select></td>
+            <td><button>&gt;&gt;</button></td>
+            <td><input type=radio name='flow_type' value='flow1'> imports</td>
+            <td><input type=radio name='flow_type' value='flow2'> exports</td>
+            <td><input type=radio name='flow_type' value='diff21'> exports - imports</td>
+            <td><input type=radio name='flow_type' value='diff12'> imports - exports</td>
+        </tr>
+    <table>
+        <div id='geo_vis'></div>
+        <div id='elements_info'></div>
+
+<!---script src='http://d3js.org/d3.v3.min.js'></script--!>
+<script src='../lib/d3.v3.min.js'></script>
+<script src='../lib/topojson.v1.min.js'></script>
+<script src='../lib/colorbrewer.js'></script>
+<script src='trade_vis.js'></script>
+<script>
+
+
+
+// switch datasets using query string
+// read query string, from Stackoverflow somewhere...
+var queryString = {};
+location.search.substr(1)
+    .split('&').forEach(function(item)
+            {queryString[item.split('=')[0]] = item.split('=')[1]});
+
+var fname = queryString.fname;
+
+if (queryString.fname === undefined)
+    fname = '1950.json';
+console.log('reading file data/' + fname);
+
+var ggg;
+d3.json('data/' + fname, function(error, trade_data) {
+    ggg = geo_vis(d3.select('#geo_vis'), trade_data)
+        .draw();
+});
+</script>
+</body>
+</html>
+

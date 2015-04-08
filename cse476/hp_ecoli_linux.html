@@ -78,6 +78,8 @@ d3.json("ecoli.json", function (error, graph) {
     rng[1] = [rng[1]];
     angle.range(rng);
 
+    function color() {return "blue";}
+
     draw_hive_plot(svg, angle, radius, graph.nodes, graph.links, true,
         toggle_select_node, toggle_select_link,
         function(d) { return radius(d.deg); },
