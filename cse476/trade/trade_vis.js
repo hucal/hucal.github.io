@@ -116,7 +116,7 @@ function get_neutral_fill(d, i){
 }
 
 
-function recalc_extrema() {
+function extrema_reflow() {
     if (extrema.max() < extrema.min()) {
         var tmp = extrema.min;
         extrema.min = extrema.max;
@@ -221,12 +221,14 @@ var categories = 5,
 /********************************************************** YEAR SWITCHER */
 
 /********************************************************** GEO VIS */
-function geo_vis(root, data, width, height) {
+function geo_vis(root, topology, dm, width, height) {
     var path, svg, g, projection,
-        trade_data = data,
+        data_man = dm,
+        topology = topology,
+        year = '1870';
         width = width ? width : 800,
         height = height ? height : 500,
-        focus_code,
+        focus_code = undefined,
         zoom = d3.behavior.zoom()
             .scaleExtent([1, 10])
             .on("zoom", move);
@@ -237,30 +239,39 @@ function geo_vis(root, data, width, height) {
         path = d3.geo.path()
             .projection(projection);
 
-    geo = {};
-
-    geo.trade_data = function(_) {
-        if (!arguments.length) return trade_data;
-        trade_data = _;
+    var draw;
+    geo = function() {
+        if (svg !== undefined) svg.remove();
+        data_man.call_with_data(year, draw);
         return geo;
     }
 
     geo.g = function() { return g; }
     geo.svg = function() { return svg; }
+    geo.year = function (_) {
+        if (!arguments.length) return year;
+        year = _;
+        return geo;
+    }
 
+    // change scale, recolor
     geo.current_flow = function(current_flow) {
+        extrema.max.year(year);
+        extrema.min.year(year);
+
         extrema.min.current_flow(current_flow);
         extrema.max.current_flow(current_flow);
-        recalc_extrema();
-        //// HELP!!!! TODO NO WORK
-        draw_palette(g, width, height);
+        extrema_reflow();
         g.selectAll('.feature')
             .style('fill', focus_code ? get_highlight_fill
                                       : get_neutral_fill);
         return geo;
     }
 
-    geo.draw = function () {
+    draw = function(trade_data, by_ccode) {
+        extrema.max.year(year);
+        extrema.min.year(year);
+
         svg = root.append('svg')
             .attr('width', width)
             .attr('height', height)
@@ -284,10 +295,6 @@ function geo_vis(root, data, width, height) {
             .attr('d', function(d) { return d; });
 
 
-        var focus_code = undefined;
-
-        extrema.max.year(fname.replace('.json',''));
-
         g = svg.append('g');
 
         g.append('rect')
@@ -298,74 +305,49 @@ function geo_vis(root, data, width, height) {
 
         get_hover_fill = 'black';
 
-        // read map containing C.O.W. country IDs
-        d3.json('data/cshapes_q4.topo.json', function(error, topology) {
-          g.selectAll('.feature')
-            .data(topojson.feature(topology, topology.objects).features)
-            .enter()
-            .append('g')
-            .attr('class', 'country')
-            .append('path')
-            .attr('d', path)
-            .attr('class', function(d) { return 'feature ccode_' + d.properties.COWCODE; })
-            .on('mouseover', function(d) {
-                d3.select(this)
-                    .style('fill', get_hover_fill)
-            })
-            .on('mouseout', function(d) {
-                if (focus_code === d.properties.COWCODE) return;
-                d3.select(this)
-                    .style('fill', focus_code ? get_highlight_fill :
-                                                get_neutral_fill);
-            })
-            .append('svg:title')
-            .text(function (d) {
-                return d.properties.ISONAME + ', capital: ' + d.properties.CAPNAME;
-            });
-
-            // used for searching for nodes by ccode
-            var seek_ccode_trade;
-
-            ///////////// TODO read trade.nodes elsewhere
-            // read C.O.W. trade data for a certain year
-            seek_ccode_trade = trade_data.nodes.map(function(n) {
-                // find max flow1, flow2
-                n.links.forEach(function(l) {
-                if (l.flow1 > extrema.max.flow1()) extrema.max.flow1(l.flow1);
-                if (l.flow2 > extrema.max.flow2()) extrema.max.flow2(l.flow2);
-
-                if (l.flow1 < extrema.min.flow1() && n.flow1 > 0)
-                    extrema.min.flow1(l.flow1);
-                if (l.flow2 < extrema.min.flow2() && n.flow2 > 0)
-                    extrema.min.flow2(l.flow2);
-                });
-
-                return n.ccode;
-            });
-            recalc_extrema();
-
-            draw_palette(g, width, height);
-
-            // match each trade record with corresponding country element
-            g.selectAll('g.country')
-            .each(function(d) {
-
-                var node_ix = seek_ccode_trade.indexOf(d.properties.COWCODE);
-                if (node_ix < 0) {
-                    // not found in trade data nodes
-                    d.valid = false;
-                    d3.select(this)
-                        .style('fill', get_neutral_fill);
-                    return;
-                }
-                d.valid = true;
-                d.trade_info = trade_data.nodes[node_ix];
-                d.trade_info_on = false;
-                d3.select(this)
-                    .style('fill', get_neutral_fill)
-                    .on('click', toggle_trade_info);
-            });
+        // draw map
+        g.selectAll('.feature')
+        .data(topojson.feature(topology, topology.objects).features)
+        .enter()
+        .append('g')
+        .attr('class', 'country')
+        .append('path')
+        .attr('d', path)
+        .attr('class', function(d) { return 'feature ccode_' + d.properties.COWCODE; })
+        .on('mouseover', function(d) {
+            d3.select(this)
+                .style('fill', get_hover_fill)
+        })
+        .on('mouseout', function(d) {
+            if (focus_code === d.properties.COWCODE) return;
+            d3.select(this)
+                .style('fill', focus_code ? get_highlight_fill :
+                                            get_neutral_fill);
+        })
+        .append('svg:title')
+        .text(function (d) {
+            return d.properties.ISONAME + ', capital: ' + d.properties.CAPNAME;
         });
+
+        // match each trade record with corresponding country element
+        g.selectAll('g.country')
+        .each(function(d) {
+            var node_ix = by_ccode.indexOf(d.properties.COWCODE);
+            if (node_ix < 0) {
+                // not found in trade data nodes
+                d.valid = false;
+                d3.select(this)
+                    .style('fill', get_neutral_fill);
+                return;
+            }
+            d.valid = true;
+            d.trade_info = trade_data.nodes[node_ix];
+            d.trade_info_on = false;
+            d3.select(this)
+                .style('fill', get_neutral_fill)
+                .on('click', toggle_trade_info);
+        });
+
 
         function toggle_trade_info(d) {
             d3.select(this).each(function (_) {
@@ -382,7 +364,6 @@ function geo_vis(root, data, width, height) {
                     selected_elements([]);
                     return;
                 }
-                d.trade_info.year = trade_data.year;
                 selected_elements([d]);
                 focus_code = d.properties.COWCODE;
 
@@ -408,6 +389,7 @@ function geo_vis(root, data, width, height) {
         }
         return geo;
     }
+
 
     // from http://techslides.com/d3-map-starter-kit
     function move() {

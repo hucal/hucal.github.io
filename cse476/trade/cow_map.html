@@ -41,17 +41,21 @@ body {
         <p>Click Russia.</p>
         <p>Can change data sets, same as <a href=bilateral_sankey.html>this other draft vis</a></p>
 
-            <button>add vis</button>
-    <table id='controls'>
+        <table>
         <tr>
-            <td><button>&lt;&lt;</button></td>
-            <td><select><option>switch year</option></select></td>
-            <td><button>&gt;&gt;</button></td>
+            <td><button>add vis</button></td>
             <td><input type=radio name='flow_type' value='flow1'> imports</td>
             <td><input type=radio name='flow_type' value='flow2'> exports</td>
             <td><input type=radio name='flow_type' value='diff21'> exports - imports</td>
             <td><input type=radio name='flow_type' value='diff12'> imports - exports</td>
         </tr>
+        </table>
+    <table id='controls'>
+    <tr>
+        <td><button>&lt;&lt;</button></td>
+        <td><select id='sel_year'></select></td>
+        <td><button>&gt;&gt;</button></td>
+    </tr>
     <table>
         <div id='geo_vis'></div>
         <div id='elements_info'></div>
@@ -63,8 +67,6 @@ body {
 <script src='trade_vis.js'></script>
 <script>
 
-
-
 // switch datasets using query string
 // read query string, from Stackoverflow somewhere...
 var queryString = {};
@@ -72,16 +74,112 @@ location.search.substr(1)
     .split('&').forEach(function(item)
             {queryString[item.split('=')[0]] = item.split('=')[1]});
 
-var fname = queryString.fname;
+var year_query = queryString.year;
 
-if (queryString.fname === undefined)
-    fname = '1950.json';
-console.log('reading file data/' + fname);
+if (queryString.year === undefined)
+    year_query = '1950';
+
+
+
+
+
+    // TODO MAKE ONE OF THESE FOR EACH VIS
+d3.selectAll('input[name=flow_type]')
+    .attr('onchange',        'console.log(this.value);ggg.current_flow(this.value)()')
+d3.select('select#sel_year')
+    .attr('onchange',       'console.log(this.value);ggg.year(this.value)()')
+    .selectAll('option')
+    .data(d3.range(1870, 2001, 10))
+    .enter().append('option')
+    .each(function (year) {
+        // select current year
+        if (''+year === year_query)
+            d3.select(this).attr('selected', 'selected')
+
+        d3.select(this)
+    .attr('value', function(year) { return year; })
+    .text(function(year) { return year; });
+    })
 
 var ggg;
-d3.json('data/' + fname, function(error, trade_data) {
-    ggg = geo_vis(d3.select('#geo_vis'), trade_data)
-        .draw();
+
+function mk_data_man () {
+    var jsons = {}, seek_ccode = {}
+        to_fname = function (year) { return 'data/' + year + '.json'; };
+
+    var man = function () {
+        return man;
+    }
+
+    man.jsons = function(){return jsons;}
+
+    man.seek_ccode = function (year) {
+        return seek_ccode[''+year];
+    }
+
+    man.call_with_data = function (year, f) {
+        year = ''+year;
+        if (typeof jsons[year] === "undefined") {
+            download_data(year, f);
+        } else {
+            f(jsons[year], seek_ccode[year]);
+        }
+        return man;
+    }
+
+    man.to_fname = to_fname;
+
+    var download_data = function (year, f) {
+        year = ''+year;
+
+        console.log('reading file ' + data_man.to_fname(year));
+        d3.json(to_fname(year), function(error, data) {
+            if (error) { console.log(error); return; }
+            jsons[year] = data;
+
+            var y = extrema.max.year();
+            extrema.max.year(year);
+            extrema.min.year(year);
+            // process C.O.W. trade data for the year
+            seek_ccode[year] = data.nodes.map(function(n) {
+                // find max flow1, flow2
+                //// TODO
+                ///////////////////////// move comparison code to extrema_keeper
+                /////// extrema keeper should hold min & max!!!
+                /////////// make more extrema for flow_totals
+                n.links.forEach(function(l) {
+                if (l.flow1 > extrema.max.flow1()) extrema.max.flow1(l.flow1);
+                if (l.flow2 > extrema.max.flow2()) extrema.max.flow2(l.flow2);
+
+                if (l.flow1 < extrema.min.flow1() && n.flow1 > 0)
+                    extrema.min.flow1(l.flow1);
+                if (l.flow2 < extrema.min.flow2() && n.flow2 > 0)
+                    extrema.min.flow2(l.flow2);
+                });
+                n.year = year;
+
+                return n.ccode;
+            });
+            extrema_reflow();
+            f(jsons[year], seek_ccode[year]);
+
+            extrema.max.year(y);
+            extrema.min.year(y);
+        });
+        return man;
+    }
+
+    return man;
+}
+
+var data_man = mk_data_man();
+
+d3.json('data/cshapes_q4.topo.json', function(error, topology) {
+    if (error) { console.log(error); return; }
+
+    ggg = geo_vis(d3.select('#geo_vis'), topology, data_man)
+        .year(year_query);
+    ggg();
 });
 </script>
 </body>
