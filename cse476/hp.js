@@ -27,10 +27,10 @@
 /**************************** HIVE PLOT: AXES, NODES, LINKS ******************/
 function draw_hive_plot(svg, angle, radius, nodes, links, draw_nodes,
                         toggle_select_node, toggle_select_link,
-                        innerRadius, outerRadius,
+                        innerRadius, outerRadius, node_width, node_height,
                         radius_prop, angle_prop, color_prop) {
-    var node_width = 6; var node_height = 1
-        ;
+//    var node_width = 6; var node_height = 1
+  //      ;
 
     // write data statistics
     d3.select('div#node-stats')
@@ -80,7 +80,8 @@ function draw_hive_plot(svg, angle, radius, nodes, links, draw_nodes,
         .attr("class", function(d, i) { return "link link_" + i;})
         .style("stroke", function(d, i) {return color_prop(d, i, true)})
         .style("stroke-opacity", opacity)
-        ///////////TODO .on("click", toggle_select_link)
+        ///////////TODO
+        .on("click", toggle_select_link)
         .attr("d", link)
     ;
 
@@ -125,8 +126,9 @@ function draw_hive_plot(svg, angle, radius, nodes, links, draw_nodes,
         .attr("height", node_width)
         .attr("width", node_height)
         .style("fill", color_prop(d) )
-        }) });
-        ///////////TODO .on("click", toggle_select_node);
+        }) })
+        ///////////TODO
+        .on("click", toggle_select_node);
 }
 
 /*************************** color legend ************************************/
@@ -250,9 +252,9 @@ function by_obj_to_ix(nodes, links) {
 
 function find_degree(nodes, links) {
     nodes.forEach(function(n) { n.deg = 0, n.deg_in = 0, n.deg_out = 0; });
-    links.forEach(function(e) {
-        nodes[e.source].deg_in++;
-        nodes[e.target].deg_out++;
+    links.forEach(function(l) {
+        nodes[l.source].deg_out++;
+        nodes[l.target].deg_in++;
     });
     var min_deg = 0, max_deg = 0;
     nodes.forEach(function(n, i) {

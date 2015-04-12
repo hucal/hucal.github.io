@@ -20,6 +20,8 @@
   stroke-width:1.5px;
 }
 
+.force_link { stroke-width: 2px; }
+
 .node {
   stroke-width: 0;
 }
@@ -31,7 +33,7 @@ g.grid circle {
 }
 
 .axis {
-    stroke: lightgrey;
+    stroke: #ccc;
     stroke-width: 3px;
 }
 
@@ -56,6 +58,18 @@ body {
     font-size: 0.9em;
 }
 
+table {
+    margin: 0 auto;
+    text-align: center;
+}
+
+td { padding: 5px; }
+
+#data-dump {
+    height: 250px;
+    overflow: auto;
+}
+
 </style>
     </head>
     <body>
@@ -67,6 +81,35 @@ body {
         visualization.
         Click nodes and links on either vis.
         Data is randomly generated on page load.
+
+        <p style="text-align:center"><button id="begin_tut">Begin tutorial</button></p>
+        <div class="hfill"/>
+        <br/>
+        <table>
+        <tr>
+            <td/>
+            <td>Nodes: <input id="node_count" type="number" min="0" value="40"> </td>
+            <td>Links: <input id="link_count" type="number" min="0" value="80"> </td>
+            <td/>
+        </tr>
+        <tr>
+            <td><input id="draw_nodes" type="checkbox">draw nodes? </td>
+            <td><input id="draw_force" type="checkbox">draw force layout? </td>
+            <td>Axis assignment: <select id="axis_func">
+                    <option value="a">(custom) by a</option>
+                    <option value="b">(custom) by b</option>
+                    <option value="deg">by degree</option>
+                    <option value="cc">by clustering coeff.</option>
+            </select></td>
+            <td>Radius assignment: <select id="radius_func">
+                    <option value="a">(custom) by a</option>
+                    <option value="b">(custom) by b</option>
+                    <option value="deg">by degree</option>
+                    <option value="cc">by clustering coeff.</option>
+            </select></td>
+        </tr>
+        </table>
+
         <p>To change graph config, use the query string. UI will be improved...</p>
         <p><a href=hp_force.html?nodes=10&links=40>nodes=10, links=40</a></p>
         <p><a href=hp_force.html?nodes=100&links=100>nodes=100, links=100</a></p>
@@ -104,23 +147,37 @@ location.search.substr(1)
     if (queryString[x] !== undefined) config[x] = !config[x];
 });
 
-var nodes = random_nodes(config.nodes, config.nodes);
-var links = random_links(nodes, config.links/2, config.links/2, randint);
-links = links.concat(random_links(nodes, config.links/2, config.links/2,
-            mk_randint_normal(0, nodes.length - 1)));
+var radius_by_what = "by_b";
+var axis_by_what = "by_a";
+var radius_assign = {
+    by_b: function(d) { return radius(d.b); }
+};
+var axis_assign = {
+    by_deg: function(d, i)
+    { return angle((d.deg === 1 || d.deg === 0) ? 2 :
+            d.deg === 2 ?  1 : 0) },
+    by_a: function(d, i)
+    { return angle(d.a); }
+};
+var axis_text = {
+    by_deg: function(d, i)
+    { return i === 1 ? "deg = 2" : i == 2 ? "deg < 2" : "deg > 2"; },
+    by_a : function(d, i)
+    { return "a=" + i; }
+};
 
-$("div#data-dump").text(JSON.stringify({nodes:nodes, links:links}, null, 2));
+
+
+// create graph
+var nodes = random_nodes(config.nodes, config.nodes);
+var links = random_links(nodes, config.links, config.links, randint);
 
 // TODO more node classification functions
 // cc, nn, ccnn, degree, user-defined
-find_degree(nodes, links);
+var minmax = find_degree(nodes, links);
+nodes[minmax[1]].max_deg = true;
 
-// find max
-nodes.sort(function (a,b) { return d3.descending(a.deg, b.deg); })
-     .slice(0,3).forEach(function (max_node) { max_node.max_targets = true; });
-
-
-
+$("div#data-dump").text(JSON.stringify({nodes:nodes, links:links}, null, 2));
 
 var width = 770,
     height = 800,
@@ -131,11 +188,11 @@ var width = 770,
 
 var angle = d3.scale.ordinal().domain(d3.range(0,3)).rangePoints([0, 4/3 * Math.PI])
     radius = d3.scale.linear().range([innerRadius, outerRadius]),
-    color = d3.scale.ordinal().domain(d3.range(3)).range(colorbrewer.RdBu[4]);
+    color = d3.scale.ordinal().domain(d3.range(3)).range(colorbrewer.RdYlGn[4]);
 
 //clone axes
-angle.range(angle.range().map(function (angle)
-            { return [angle, angle + Math.PI / 6]; }));
+angle.range(angle.range().map(function (angle, ix)
+            { return [angle, angle + Math.PI / 6] }));
 
 // prepare SVG document
 var svg = d3.select("div#vis").append("svg")
@@ -147,21 +204,31 @@ var svg = d3.select("div#vis").append("svg")
 
 
 draw_hive_plot(svg, angle, radius, nodes, links, config.draw_nodes,
-    toggle_select_node, toggle_select_link,
-    function(d) { return radius(d.b); },
-    function(d) { return angle(d.a); },
+    toggle_select_node, toggle_select_link, innerRadius, outerRadius, 8, 7,
+    radius_assign[radius_by_what],
+    axis_assign[axis_by_what],
     function(d, i, islink) {
         if (islink) d = nodes[d.source];
-        return !islink ? color(d.a) : d.max_targets ? color(d.a) : "lightgrey";
+        return !islink ? color(d.a) : d.max_deg ? color(d.a) : "#444";
     });
 
 // EXAMPLE svg grid
 svg.selectAll("circle.grid")
-    .data(radius.ticks(7))
+    .data(radius.ticks(10))
   .enter().append("g")
     .attr("class", "grid")
     .append("circle")
     .attr("r", function (d) { return radius(d); });
+
+svg.selectAll("text.axis_title")
+    .data(angle.range())
+  .enter().append("text")
+    .attr("class", "axis_title")
+    .attr("x", function (d) { return outerRadius * Math.cos(d3.mean(d)); })
+    .attr("y", function (d) { return outerRadius * Math.sin(d3.mean(d)); })
+    .attr("text-anchor", "middle")
+    .style("font-weight", "bold")
+    .text( axis_text[axis_by_what] );
 
 draw_color_legend("node.a", function(d) {return d;}, color);
 
@@ -206,11 +273,13 @@ function draw_force_directed(nodes, links) {
     var path = svg_force.append("g").selectAll("path.link")
         .data(force.links())
       .enter().append("path")
-        .attr("class", function (d,i) { return "link link_" + i; })
-        .style("stroke", function(d) { return !d.source.max_targets ?
-            "#444" : color(d.source.a); })
+        .attr("class", function (d,i) { return "link force_link link_" + i; })
+        .style("stroke", function(d) { return !d.source.max_deg ? "#444" :
+                (color(d.source.a));
+        })
         .attr("marker-end", function (d) { return "url(#"
-            + (!d.source.max_targets ? "#444" : color(d.source.a)) + ")"; })
+            + (d.source.max_deg ? "#444" :
+                    color(d.source.a)) + ")"; })
         .on("click", toggle_select_link);
 
     var circle = svg_force.append("g").selectAll("circle.node")
@@ -256,15 +325,19 @@ function draw_force_directed(nodes, links) {
 
 //TODO  use quick node size animation to double highlight
 function toggle_select_node(d, i) {
-    if (d._selected = !d._selected)
+    if (d._selected = !d._selected) {
+        console.log(d);
         d3.selectAll(".node_" + i).style("stroke", "black").style("stroke-width", 6);
+    }
     else
         d3.selectAll(".node_" + i).style("stroke", "none");
 }
 
 function toggle_select_link(d, i) {
-    if (d._selected = !d._selected)
+    if (d._selected = !d._selected) {
+        console.log(d, nodes[d.source], nodes[d.target]);
         d3.selectAll(".link_" + i).style("stroke-width", 7);
+    }
     else
         d3.selectAll(".link_" + i).style("stroke-width", 2);
 }

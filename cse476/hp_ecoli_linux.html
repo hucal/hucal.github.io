@@ -82,7 +82,7 @@ function mk_hp(fname) {
         function nada() {return;}
 
         draw_hive_plot(svg, angle, radius, graph.nodes, graph.links, true,
-            nada, nada, innerRadius, outerRadius,
+            nada, nada, innerRadius, outerRadius, 6, 1,
             function(d) { return radius(d.deg); },
             function(d) { return angle(
                 (d.deg_in === 0 && d.deg_out > 0) ? 1 :
