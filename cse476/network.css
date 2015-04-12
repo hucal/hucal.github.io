@@ -1,6 +1,7 @@
 
 .link {
   fill: none;
+  stroke: grey;
   stroke-width:1.5px;
 }
 
@@ -19,13 +20,14 @@ g.grid circle {
     stroke-width: 3px;
 }
 
-text.axis-label, text.axis-angle {
+text.axis-label, text.axis-angle, text.title {
     stroke: none;
     fill: black;
     font-size: 0.8em;
     text-anchor: middle;
 }
-text.axis-label {font-weight: bold}
+text.axis-label, text.title {font-weight: bold}
+text.title {font-size: 1.5em;}
 
 body {
     text-align: center;

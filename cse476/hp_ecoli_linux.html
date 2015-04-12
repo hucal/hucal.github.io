@@ -73,25 +73,26 @@ function mk_hp(fname) {
 
         //clone axes
         var rng = angle.range();
-        rng[0] = [rng[0], rng[0] + Math.PI / 6];
+        rng[0] = [rng[0], rng[0] - Math.PI / 6];
         rng[2] = [rng[2]];
         rng[1] = [rng[1]];
         angle.range(rng);
 
-        function color() {return "blue";}
         function nada() {return;}
+        var col_high = "red",
+            col_low = "#444";
 
         draw_hive_plot(svg, angle, radius, graph.nodes, graph.links, true,
             nada, nada, innerRadius, outerRadius, 6, 1,
             function(d) { return radius(d.deg); },
             function(d) { return angle(
-                (d.deg_in === 0 && d.deg_out > 0) ? 1 :
-                (d.deg_out === 0 && d.deg_in > 0) ? 2 :
+                (d.deg_in === 0 && d.deg_out > 0) ? 2 :
+                (d.deg_out === 0 && d.deg_in > 0) ? 1 :
                 0
                 ); },
             function(d, i, islink) {
                 if (islink) d = graph.nodes[d.source];
-                return !islink ? color(d.a) : d.max_targets ? color(d.a) : "lightgrey";
+                return !islink ? col_high : d.max_targets ? col_high : col_low;
             });
 
 
@@ -102,7 +103,23 @@ function mk_hp(fname) {
             .append("circle")
             .attr("r", function (d) { return radius(d); });
 
+        svg.append("text")
+            .attr("class", "title")
+            .attr("y", -outerRadius)
+            .text(fname);
+
+        svg.selectAll("text.axis-label")
+            .data(angle.range())
+          .enter().append("text")
+            .attr("class", "axis-label")
+            .attr("x", function (d) { return outerRadius * Math.cos(d3.mean(d)); })
+            .attr("y", function (d) { return outerRadius * Math.sin(d3.mean(d)); })
+            .attr("text-anchor", "middle")
+            .style("font-weight", "bold")
+            .text( function(d,i) { return i === 2 ? "regulators"
+                : i == 1 ? "workhorses" : "managers"; } );
     });
+
 }
 </script>
 </body>
