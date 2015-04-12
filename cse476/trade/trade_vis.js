@@ -226,6 +226,7 @@ function geo_vis(root, topology, dm, width, height) {
         data_man = dm,
         topology = topology,
         year = '1870';
+    ////wtf....
         width = width ? width : 800,
         height = height ? height : 500,
         focus_code = undefined,
@@ -304,6 +305,7 @@ function geo_vis(root, topology, dm, width, height) {
 
 
         get_hover_fill = 'black';
+
 
         // draw map
         g.selectAll('.feature')
@@ -422,7 +424,51 @@ function geo_vis(root, topology, dm, width, height) {
 
 
 
-/********************************************************** SANKEY */
+/********************************************************** TODO SANKEY */
+
+function sankey_vis(root, topology, dm, width, height) {
+    var svg, g,
+        data_man = dm,
+        topology = topology,
+        year = '1870';
+    ////wtf....
+        width = width ? width : 800,
+        height = height ? height : 500;
+
+    vis = function () {
+        if (svg !== undefined) svg.remove();
+        //....
+        return vis;
+    }
+
+    vis.g = function() { return g; }
+    vis.svg = function() { return svg; }
+    vis.year = function (_) {
+        if (!arguments.length) return year;
+        year = _;
+        return vis;
+    }
+
+    // change scale, recolor
+    vis.current_flow = function(current_flow) {
+        extrema.max.year(year);
+        extrema.min.year(year);
+
+        extrema.min.current_flow(current_flow);
+        extrema.max.current_flow(current_flow);
+        extrema_reflow();
+        g.selectAll('.feature')
+            .style('fill', focus_code ? get_highlight_fill
+                                      : get_neutral_fill);
+        return vis;
+    }
+
+    draw = function(trade_data, by_ccode) {
+
+    }
+    return vis;
+}
+
 /*
 var margin = {top: 10, right: 210, bottom: 10, left: 210},
     width = 1350 - margin.left - margin.right,
@@ -602,4 +648,124 @@ function update(graph, sankey, parentelem) {
 }
 */
 
-/********************************************************** HIVE PLOT */
+
+
+
+
+
+
+function mk_data_man () {
+    var jsons = {}, seek_ccode = {}
+        to_fname = function (year) { return 'data/' + year + '.json'; };
+
+    var man = function () {
+        return man;
+    }
+
+    man.jsons = function(){return jsons;}
+
+    man.seek_ccode = function (year) {
+        return seek_ccode[''+year];
+    }
+
+    man.call_with_data = function (year, f) {
+        year = ''+year;
+        if (typeof jsons[year] === "undefined") {
+            download_data(year, f);
+        } else {
+            f(jsons[year], seek_ccode[year]);
+        }
+        return man;
+    }
+
+    man.to_fname = to_fname;
+
+    var download_data = function (year, f) {
+        year = ''+year;
+
+        console.log('reading file ' + data_man.to_fname(year));
+        d3.json(to_fname(year), function(error, data) {
+            if (error) { console.log(error); return; }
+            jsons[year] = data;
+
+            var y = extrema.max.year();
+            extrema.max.year(year);
+            extrema.min.year(year);
+            // process C.O.W. trade data for the year
+            seek_ccode[year] = data.nodes.map(function(n) {
+                // find max flow1, flow2
+                //// TODO
+                ///////////////////////// move comparison code to extrema_keeper
+                /////// extrema keeper should hold min & max!!!
+                /////////// make more extrema for flow_totals
+                n.links.forEach(function(l) {
+                if (l.flow1 > extrema.max.flow1()) extrema.max.flow1(l.flow1);
+                if (l.flow2 > extrema.max.flow2()) extrema.max.flow2(l.flow2);
+
+                if (l.flow1 < extrema.min.flow1() && n.flow1 > 0)
+                    extrema.min.flow1(l.flow1);
+                if (l.flow2 < extrema.min.flow2() && n.flow2 > 0)
+                    extrema.min.flow2(l.flow2);
+                });
+                n.year = year;
+
+                return n.ccode;
+            });
+            extrema_reflow();
+            f(jsons[year], seek_ccode[year]);
+
+            extrema.max.year(y);
+            extrema.min.year(y);
+        });
+        return man;
+    }
+
+    return man;
+}
+
+var data_man = mk_data_man();
+
+/********************************************************** TODO HIVE PLOT */
+function hp_vis(root, topology, dm, width, height) {
+    var svg, g,
+        data_man = dm,
+        topology = topology,
+        year = '1870';
+    ////wtf....
+        width = width ? width : 800,
+        height = height ? height : 500;
+
+    vis = function () {
+        if (svg !== undefined) svg.remove();
+        //....
+        return vis;
+    }
+
+    vis.g = function() { return g; }
+    vis.svg = function() { return svg; }
+    vis.year = function (_) {
+        if (!arguments.length) return year;
+        year = _;
+        return vis;
+    }
+
+    // change scale, recolor
+    vis.current_flow = function(current_flow) {
+        extrema.max.year(year);
+        extrema.min.year(year);
+
+        extrema.min.current_flow(current_flow);
+        extrema.max.current_flow(current_flow);
+        extrema_reflow();
+        g.selectAll('.feature')
+            .style('fill', focus_code ? get_highlight_fill
+                                      : get_neutral_fill);
+        return vis;
+    }
+
+    draw = function(trade_data, by_ccode) {
+
+    }
+    return vis;
+}
+

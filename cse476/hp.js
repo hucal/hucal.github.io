@@ -26,8 +26,12 @@
 
 /**************************** HIVE PLOT: AXES, NODES, LINKS ******************/
 function draw_hive_plot(svg, angle, radius, nodes, links, draw_nodes,
-                        toggle_select_nodes, toggle_select_link,
+                        toggle_select_node, toggle_select_link,
+                        innerRadius, outerRadius,
                         radius_prop, angle_prop, color_prop) {
+    var node_width = 6; var node_height = 1
+        ;
+
     // write data statistics
     d3.select('div#node-stats')
         .append('p')
@@ -76,7 +80,7 @@ function draw_hive_plot(svg, angle, radius, nodes, links, draw_nodes,
         .attr("class", function(d, i) { return "link link_" + i;})
         .style("stroke", function(d, i) {return color_prop(d, i, true)})
         .style("stroke-opacity", opacity)
-        .on("click", toggle_select_link)
+        ///////////TODO .on("click", toggle_select_link)
         .attr("d", link)
     ;
 
@@ -121,8 +125,8 @@ function draw_hive_plot(svg, angle, radius, nodes, links, draw_nodes,
         .attr("height", node_width)
         .attr("width", node_height)
         .style("fill", color_prop(d) )
-        }) })
-        .on("click", toggle_select_node);
+        }) });
+        ///////////TODO .on("click", toggle_select_node);
 }
 
 /*************************** color legend ************************************/
