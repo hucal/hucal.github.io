@@ -1,0 +1,55 @@
+.link {
+  fill: none;
+  stroke-width:1.5px;
+}
+
+.force_link { stroke-width: 2px; }
+
+.node {
+  stroke-width: 0;
+}
+
+g.grid circle {
+    stroke: lightgrey;
+    stroke-dasharray: 20,10;
+    fill: none;
+}
+
+.axis {
+    stroke: #ccc;
+    stroke-width: 3px;
+}
+
+text.axis-label, text.axis-angle {
+    stroke: none;
+    fill: black;
+    font-size: 0.8em;
+    text-anchor: middle;
+}
+text.axis-label {font-weight: bold}
+
+body {
+    text-align: center;
+    min-width: 900px;
+}
+
+.legend-title {
+    font-style: italic;
+    font-size: 1em;
+}
+.legend-elem {
+    font-size: 0.9em;
+}
+
+table {
+    margin: 0 auto;
+    text-align: center;
+}
+
+td { padding: 5px; }
+
+#data-dump {
+    height: 250px;
+    overflow: auto;
+}
+

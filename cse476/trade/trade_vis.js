@@ -144,7 +144,7 @@ function basic_stats() {
 
 function extreme_keeper () {
     var flows = {},
-        current_flow = 'diff12',
+        current_flow = 'diff12rel',
         global_min = basic_stats(),
         year = '1950'
         flow_types = {

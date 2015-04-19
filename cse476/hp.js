@@ -25,115 +25,149 @@
 
 
 /**************************** HIVE PLOT: AXES, NODES, LINKS ******************/
-function draw_hive_plot(svg, angle, radius, nodes, links, draw_nodes,
-                        toggle_select_node, toggle_select_link,
-                        innerRadius, outerRadius, node_width, node_height,
-                        radius_prop, angle_prop, color_prop) {
-//    var node_width = 6; var node_height = 1
-  //      ;
+function mk_hive_plot() {
+    var svg, angle, radius, nodes, links, draw_nodes=true,
+        toggle_select_node, toggle_select_link,
+        innerRadius, outerRadius, node_width=6, node_height=2,
+        elem_radius, elem_angle, elem_color, opacity;
 
-    // write data statistics
-    d3.select('div#node-stats')
-        .append('p')
-        .text('Node count: ' + nodes.length +
-              '; link count: ' +  links.length);
+    var vis = function() {
+        if (opacity === undefined)
+            opacity = 0.05 + Math.log(10)/Math.log(links.length);
 
+        // TODO allow reversing of axis or group segments
 
-    // TODO allow reversing of axis or group segments
-    //
-    // suggestion: no more than 3 axis or 3 pairs of cloned axis
-    svg.selectAll("g.axis")
-        .data(angle.range())
-      .enter().append("g")
-        .selectAll("line")
-        .data(function(d) { return d; })
-      .enter()
-        .append("line")
-        .attr("class", "axis")
-        .attr("transform", function(d) { return "rotate(" + degrees(d) + ")"; })
-        .attr("stroke", "black")
-        .attr("x1", innerRadius)
-        .attr("x2", outerRadius);
+        svg.selectAll("g.axis")
+            .data(angle.range())
+          .enter().append("g")
+            .selectAll("line")
+            .data(function(d) { return d; })
+          .enter()
+            .append("line")
+            .attr("class", "axis")
+            .attr("transform", function(d) { return "rotate(" + degrees(d) + ")"; })
+            .attr("stroke", "black")
+            .attr("x1", innerRadius)
+            .attr("x2", outerRadius);
 
 
-    var link = d3.hive.link()
-           .source(function (d) { return nodes[d.source]; })
-           .target(function (d) { return nodes[d.target]; })
-           .angle(function(d, i, link) {
-               var is_source = nodes[link.source] === d;
-                   a = angle_prop(d),
-                   b = angle_prop( is_source ? nodes[link.target]
-                                             : nodes[link.source]);
-               if (a === b)
-                   return is_source ? a[1] : a[0];
-               return nearest_angle(a,b);
-           })
-           .radius(function(d) { return radius_prop(d); });
+        var link = d3.hive.link()
+               .source(function (d) { return nodes[d.source]; })
+               .target(function (d) { return nodes[d.target]; })
+               .angle(function(d, i, link) {
+                   var is_source = nodes[link.source] === d;
+                       a = elem_angle(d),
+                       b = elem_angle( is_source ? nodes[link.target]
+                                                 : nodes[link.source]);
+                   if (a === b)
+                       return is_source ? a[1] : a[0];
+                   return nearest_angle(a,b);
+               })
+               .radius(function(d) { return elem_radius(d); });
+        // TODO option: node size encoding (ala jhive)
+        // TODO nodes currently take discrete positions
+        // make connections somehow spread out evenly across the axis?
+        if (draw_nodes)
+        svg.selectAll("g.node")
+            .data(nodes)
+          .enter()
+            .append("g")
+            .attr("class", "node")
+            .each(function(d, i) {
+                var elem = d3.select(this);
+                elem_angle(d).forEach(function (angle) { elem
+            .append("rect")
+            .attr("class", "node node_" + i)
+            .attr("transform", "rotate(" + degrees(angle) + ")" )
+            .attr("x", elem_radius(d) - node_height/2 )
+            .attr("y", -node_width/2)
+            .attr("height", node_width)
+            .attr("width", node_height)
+            .style("fill", elem_color(d) )
+            }) })
+            ///////////TODO
+            .on("click", toggle_select_node);
 
 
-    var opacity = 0.05 + Math.log(10)/Math.log(links.length);
-    console.log(opacity);
+        svg.selectAll("path.link")
+            .data(links)
+          .enter().append("path")
+            .attr("class", function(d, i) { return "link link_" + i;})
+            .style("stroke", function(d, i) {return elem_color(d, i, true)})
+            .style("stroke-opacity", opacity)
+            ///////////TODO
+            .on("click", toggle_select_link)
+            .attr("d", link)
+        ;
 
-    svg.selectAll("path.link")
-        .data(links)
-      .enter().append("path")
-        .attr("class", function(d, i) { return "link link_" + i;})
-        .style("stroke", function(d, i) {return color_prop(d, i, true)})
-        .style("stroke-opacity", opacity)
-        ///////////TODO
-        .on("click", toggle_select_link)
-        .attr("d", link)
-    ;
 
-    function min_with(f, xs) {
-        var min = xs[0];
-        xs.forEach(function(x) {
-            if (f(x) < f(min)) min = x;
-        });
-        return min; }
 
-    function snd(x){ return x[1]; }
+        function min_with(f, xs) {
+            var min = xs[0];
+            xs.forEach(function(x) {
+                if (f(x) < f(min)) min = x;
+            });
+            return min; }
 
-    ////////////FIXME TODO
-    // overkill for 6 axes...
-    // should have more structured angle.range().
-    function nearest_angle(angles_a, angles_b) {
-        /* i know this looks bad... but angle.range() is supposed to be a small array */
-        // find the pair of angles with minimal separation
-        return min_with(snd, angles_a.map(function (a) {
-        return min_with(snd, angles_b.map(function (b) {
-                return [a, Math.abs(a - b)%(Math.PI/2)];
-        })); }))[0];
+        function snd(x){ return x[1]; }
+
+        ////////////FIXME TODO
+        // overkill for 6 axes...
+        // should have more structured angle.range().
+        function nearest_angle(angles_a, angles_b) {
+            /* i know this looks bad... but angle.range() is supposed to be a small array */
+            // find the pair of angles with minimal separation
+            return min_with(snd, angles_a.map(function (a) {
+            return min_with(snd, angles_b.map(function (b) {
+                    return [a, Math.abs(a - b)%(Math.PI/2)];
+            })); }))[0];
+        }
+
+        return svg
     }
 
-    // TODO option: node size encoding (ala jhive)
-    // TODO nodes currently take discrete positions
-    // make connections somehow spread out evenly across the axis?
-    if (draw_nodes)
-    svg.selectAll("g.node")
-        .data(nodes)
-      .enter()
-        .append("g")
-        .attr("class", "node")
-        .each(function(d, i) {
-            var elem = d3.select(this);
-            angle_prop(d).forEach(function (angle) { elem
-        .append("rect")
-        .attr("class", "node node_" + i)
-        .attr("transform", "rotate(" + degrees(angle) + ")" )
-        .attr("x", radius_prop(d) - node_height/2 )
-        .attr("y", -node_width/2)
-        .attr("height", node_width)
-        .attr("width", node_height)
-        .style("fill", color_prop(d) )
-        }) })
-        ///////////TODO
-        .on("click", toggle_select_node);
+    vis.opacity = function(_) { if (!arguments.length) return opacity ;
+                            opacity = _; return vis; }
+    vis.svg = function(_) { if (!arguments.length) return svg;
+                            svg = _; return vis; }
+    vis.nodes = function(_) { if (!arguments.length) return nodes ;
+                            nodes = _; return vis; }
+    vis.links = function(_) { if (!arguments.length) return links ;
+                            links = _; return vis; }
+    vis.draw_nodes = function(_) { if (!arguments.length) return draw_nodes ;
+                            draw_nodes = _; return vis; }
+    vis.toggle_select_node = function(_) { if (!arguments.length) return toggle_select_node ;
+                            toggle_select_node = _; return vis; }
+    vis.toggle_select_link = function(_) { if (!arguments.length) return toggle_select_link ;
+                            toggle_select_link = _; return vis; }
+    vis.innerRadius = function(_) { if (!arguments.length) return innerRadius ;
+                            innerRadius = _; return vis; }
+    vis.outerRadius = function(_) { if (!arguments.length) return outerRadius ;
+                            outerRadius = _; return vis; }
+    vis.node_width = function(_) { if (!arguments.length) return node_width ;
+                            node_width = _; return vis; }
+    vis.node_height = function(_) { if (!arguments.length) return node_height ;
+                            node_height = _; return vis; }
+    vis.elem_radius = function(_) { if (!arguments.length) return elem_radius ;
+                            elem_radius = _; return vis; }
+    vis.elem_angle = function(_) { if (!arguments.length) return elem_angle ;
+                            elem_angle = _; return vis; }
+    vis.elem_color = function(_) { if (!arguments.length) return elem_color ;
+                            elem_color = _; return vis; }
+    vis.radius = function(_) { if (!arguments.length) return radius ;
+                            radius = _; return vis; }
+    vis.angle = function(_) { if (!arguments.length) return angle ;
+                            angle = _; return vis; }
+    return vis;
 }
 
+
 /*************************** color legend ************************************/
-function draw_color_legend(title, get_name, color) {
-    var legend = d3.select("div#vis").append("svg")
+function draw_color_legend(title, get_name, color, where) {
+    if (where === undefined)
+        where = d3.select("div#vis");
+
+    var legend = where.append("svg")
         .attr("class", "legends")
         .attr("width", 36 * Math.max(color.domain().length))
         .attr("height", 100)
@@ -176,7 +210,7 @@ function draw_color_legend(title, get_name, color) {
 /************************* GRAPH GENERATION *********************************/
 
 function random_nodes(min, max) {
-    if (arguments.length !== 2) {
+    if (!arguments.length !== 2) {
         min = 5;
         max = 10;
     }
@@ -192,7 +226,7 @@ function random_nodes(min, max) {
 
 function random_links(nodes, min, max, rand_node_picker) {
     // only one argument? then E = 2V
-    if (arguments.length === 1) {
+    if (!arguments.length === 1) {
         min = nodes.length;
         max = min;
         rand_node_picker = randint;
@@ -205,7 +239,7 @@ function random_links(nodes, min, max, rand_node_picker) {
         }
         return d;
     });
-    if (arguments.length === 1)
+    if (!arguments.length === 1)
         nodes.forEach(function (node, node_ix) {
             var sink = Math.random() > 0.5;
             links.push({
