@@ -1,0 +1,137 @@
+<!doctype html>
+<html class='no-js' lang='en'>
+    <head>
+        <meta charset='utf-8'>
+        <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+        <title>D3 Hive Plot, COW Data</title>
+        <meta name='description' content=''>
+        <meta name='viewport' content='width=device-width, initial-scale=1'>
+
+        <link rel='apple-touch-icon' href='../../apple-touch-icon.png'>
+
+        <link rel='stylesheet' href='../../css/normalize.css'>
+        <link rel='stylesheet' href='../../css/main.css'>
+        <link rel='stylesheet' href='style.css'>
+        <link rel='stylesheet' href='../hp_force.css'>
+        <script src='../../js/vendor/modernizr-2.8.3.min.js'></script>
+        <style>
+        body {
+            width: 900px;
+            margin: 0 auto;
+        }
+
+        #hp_vis {
+            margin: 0 auto;
+        }
+
+        .link, g.grid circle{
+            fill: none
+        }
+
+
+
+
+        /* d3 lasso */
+        .lasso path {
+          stroke: rgb(80,80,80);
+          stroke-width:2px;
+        }
+
+        .lasso .drawn {
+          fill-opacity:.05 ;
+        }
+
+        .lasso .loop_close {
+          fill:none;
+          stroke-dasharray: 4,4;
+        }
+
+        .lasso .origin {
+          fill:#3399FF;
+          fill-opacity:.5;
+        }
+
+        .not_possible {
+          height:20px;
+        }
+
+        .possible {
+          fill:#EC888C;
+          height:10px;
+        }
+        </style>
+    </head>
+    <body>
+        <!--[if lt IE 8]>
+            <p class='browserupgrade'>You are using an <strong>outdated</strong> browser. Please <a href='http://browsehappy.com/'>upgrade your browser</a> to improve your experience.</p>
+        <![endif]-->
+
+
+        <table>
+        <tr>
+            <td><button>add vis</button></td>
+            <td><input type=radio name='flow_type' value='flow1'> imports</td>
+            <td><input type=radio name='flow_type' value='flow2'> exports</td>
+            <td><input type=radio name='flow_type' value='diff21'> exports - imports</td>
+            <td><input type=radio name='flow_type' value='diff12'> imports - exports</td>
+        </tr>
+        </table>
+    <table id='controls'>
+    <tr>
+        <td><button>&lt;&lt;</button></td>
+        <td><select id='sel_year'></select></td>
+        <td><button>&gt;&gt;</button></td>
+    </tr>
+    </table>
+        <div id='hp_vis'></div>
+        <div id='elements_info'></div>
+
+<!---script src='http://d3js.org/d3.v3.min.js'></script--!>
+<script src='../lib/d3.v3.min.js'></script>
+<script src='../lib/topojson.v1.min.js'></script>
+<script src='../lib/colorbrewer.js'></script>
+<script src='../lib/D3-Lasso-Plugin/lasso.js'></script>
+<script src='../hp.js'></script>
+<script src='../d3.hive.v0.dev.js'></script>
+<script src='trade_vis.js'></script>
+<script>
+
+// switch datasets using query string
+// read query string, from Stackoverflow somewhere...
+var queryString = {};
+location.search.substr(1)
+    .split('&').forEach(function(item)
+            {queryString[item.split('=')[0]] = item.split('=')[1]});
+
+var year_query = queryString.year;
+
+if (queryString.year === undefined)
+    year_query = '1870';
+
+// TODO MAKE ONE OF THESE FOR EACH VIS
+d3.selectAll('input[name=flow_type]')
+    .attr('onchange',        'console.log(this.value);ggg.current_flow(this.value)')
+d3.select('select#sel_year')
+    .attr('onchange',       'console.log(this.value);ggg.year(this.value)()')
+    .selectAll('option')
+    .data(d3.range(1870, 2001, 10))
+    .enter().append('option')
+    .each(function (year) {
+        // select current year
+        if (''+year === year_query)
+            d3.select(this).attr('selected', 'selected')
+
+        d3.select(this)
+    .attr('value', function(year) { return year; })
+    .text(function(year) { return year; });
+    })
+
+var ggg;
+
+ggg = hp_vis(d3.select('#hp_vis'), data_man)
+        .year(year_query);
+ggg();
+</script>
+</body>
+</html>
+

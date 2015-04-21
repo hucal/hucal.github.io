@@ -1,0 +1,98 @@
+<!doctype html>
+<html class="no-js" lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>Hive Plot tutorial</title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+
+        <link rel="stylesheet" href="../css/normalize.css">
+        <link rel="stylesheet" href="../css/main.css">
+        <link rel="stylesheet" href="hp_force.css">
+        <link rel="stylesheet" href="lib/bootstro.js/bootstro.min.css">
+        <script src="../js/vendor/modernizr-2.8.3.min.js"></script>
+    <style>
+.popover {background-color:white;width:100px;outline: 2px solid black; }
+    </style>
+    </head>
+    <body>
+        <!--[if lt IE 8]>
+            <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+        <![endif]-->
+
+        <p><a href=http://hiveplot.net/>Hive Plot</a> visualization tutorial.
+        Data is randomly generated on page load.
+
+        <p style="text-align:center"><button id="begin_tut">Begin tutorial</button></p>
+        <div class="hfill"><div/>
+        <br/>
+        <div id="node-stats"></div>
+        <div id="vis"></div>
+        <div id="vis_force"></div>
+        <div class="hfill"></div>
+        <br/>
+        <h2>Data dump</h2>
+        <div id="data-dump"></div>
+
+<script src="lib/jquery-1.10.2.min.js"></script>
+<script src="lib/colorbrewer.js"></script>
+<script src="lib/d3.v3.min.js"></script>
+<script src="lib/bootstrap/js/bootstrap.js"></script>
+<script src="d3.hive.v0.dev.js"></script>
+<script src="hp.js"></script>
+<script src="hp_force.js"></script>
+<script>
+// write data statistics
+config.draw_force = false;
+config.nodes = 10;
+config.links = 15;
+axis_by_what = "by_deg";
+height = width = 500;
+hive_plot.node_height(6)
+    .innerRadius(20)
+    .outerRadius(width/2 - 10)
+    .opacity(0.5);
+var vis = draw_hp_force();
+d3.select('div#node-stats')
+    .append('p')
+    .text('Node count: ' + vis.nodes.length +
+          '; link count: ' +  vis.links.length);
+
+function redraw() {
+    obj_keys(vis.svg).map(function(svg) {
+        vis.svg[svg].remove();
+    })
+    vis = draw_hp_force(vis.nodes, vis.links);
+}
+function obj_keys(obj) {
+    keys = [];
+    for (var i in obj)
+        if (obj.hasOwnProperty(i))
+            keys.push(i);
+    return keys;
+}
+
+$("div#data-dump").text(JSON.stringify({nodes:vis.nodes, links:vis.links}, null, 2));
+
+$(document).ready(function() {
+    d3.select("div#data-dump");
+    vis.svg.hive_plot.selectAll(".node")
+        .attr("title", "TITLE")
+        .attr("data-content", function(d){return d.a;});
+
+    $('svg.vis .node').popover({
+       'trigger':'hover'
+       ,'container': 'body'
+       ,'placement': 'top'
+       ,'white-space': 'nowrap'
+       ,'html':'true'
+    });
+});
+
+</script>
+</body>
+</html>
+
