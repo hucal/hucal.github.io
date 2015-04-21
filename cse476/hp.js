@@ -36,15 +36,18 @@ function mk_hive_plot() {
             opacity = 0.05 + Math.log(10)/Math.log(links.length);
 
         // TODO allow reversing of axis or group segments
+        var g = svg
+            ;
 
-        svg.selectAll("g.axis")
+        g.selectAll("g.axis")
             .data(angle.range())
           .enter().append("g")
+            .attr("class", function (d,i) { return "axes" + i; })
             .selectAll("line")
             .data(function(d) { return d; })
           .enter()
             .append("line")
-            .attr("class", "axis")
+            .attr("class", function (d,i) { return "axis axis" + i; })
             .attr("transform", function(d) { return "rotate(" + degrees(d) + ")"; })
             .attr("stroke", "black")
             .attr("x1", innerRadius)
@@ -64,32 +67,8 @@ function mk_hive_plot() {
                    return nearest_angle(a,b);
                })
                .radius(function(d) { return elem_radius(d); });
-        // TODO option: node size encoding (ala jhive)
-        // TODO nodes currently take discrete positions
-        // make connections somehow spread out evenly across the axis?
-        if (draw_nodes)
-        svg.selectAll("g.node")
-            .data(nodes)
-          .enter()
-            .append("g")
-            .attr("class", "node")
-            .each(function(d, i) {
-                var elem = d3.select(this);
-                elem_angle(d).forEach(function (angle) { elem
-            .append("rect")
-            .attr("class", "node node_" + i)
-            .attr("transform", "rotate(" + degrees(angle) + ")" )
-            .attr("x", elem_radius(d) - node_height/2 )
-            .attr("y", -node_width/2)
-            .attr("height", node_width)
-            .attr("width", node_height)
-            .style("fill", elem_color(d) )
-            }) })
-            ///////////TODO
-            .on("click", toggle_select_node);
 
-
-        svg.selectAll("path.link")
+        g.selectAll("path.link")
             .data(links)
           .enter().append("path")
             .attr("class", function(d, i) { return "link link_" + i;})
@@ -99,6 +78,44 @@ function mk_hive_plot() {
             .on("click", toggle_select_link)
             .attr("d", link)
         ;
+
+
+
+
+        // TODO option: node size encoding (ala jhive)
+        // TODO nodes currently take discrete positions
+        // make connections somehow spread out evenly across the axis?
+        if (draw_nodes)
+        g.selectAll("g.node")
+            .data(nodes)
+          .enter()
+            .append("g")
+            .attr("class", "node_g")
+            .each(function(d, i) {
+                var elem = d3.select(this);
+                elem_angle(d).forEach(function (angle) {
+                    var a = angle - Math.atan(node_width/2 / elem_radius(d));
+                    var x = (elem_radius(d)) * Math.cos(a),
+                        y = (elem_radius(d)) * Math.sin(a);
+
+
+                    elem
+            .append("rect")
+            .attr("class", "node node_" + i)
+            .attr("x",x)
+            .attr("y",y)
+            .attr("transform", "rotate(" + degrees(angle) + " " + x + " " + y + ")" )
+            //.attr("transform", "rotate(" + degrees(angle) + ")" )
+            //.attr("x", elem_radius(d) - node_height/2)
+            //.attr("y", -node_width/2)
+            .attr("height", node_width)
+            .attr("width", node_height)
+            .style("fill", elem_color(d) )
+            }) })
+            ///////////TODO
+            .on("click", toggle_select_node);
+
+
 
 
 
@@ -123,7 +140,7 @@ function mk_hive_plot() {
             })); }))[0];
         }
 
-        return svg
+        return g;
     }
 
     vis.opacity = function(_) { if (!arguments.length) return opacity ;
@@ -158,6 +175,8 @@ function mk_hive_plot() {
                             radius = _; return vis; }
     vis.angle = function(_) { if (!arguments.length) return angle ;
                             angle = _; return vis; }
+    vis.color = function(_) { if (!arguments.length) return color ;
+                            color = _; return vis; }
     return vis;
 }
 
@@ -210,7 +229,7 @@ function draw_color_legend(title, get_name, color, where) {
 /************************* GRAPH GENERATION *********************************/
 
 function random_nodes(min, max) {
-    if (!arguments.length !== 2) {
+    if (arguments.length !== 2) {
         min = 5;
         max = 10;
     }

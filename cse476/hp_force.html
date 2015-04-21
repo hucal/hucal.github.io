@@ -11,7 +11,6 @@
 
         <link rel="stylesheet" href="../css/normalize.css">
         <link rel="stylesheet" href="../css/main.css">
-        <link rel="stylesheet" href="../css/network.css">
         <link rel="stylesheet" href="hp_force.css">
         <script src="../js/vendor/modernizr-2.8.3.min.js"></script>
     </head>
@@ -39,16 +38,8 @@
             <td><input id="draw_nodes" type="checkbox">draw nodes? </td>
             <td><input id="draw_force" type="checkbox">draw force layout? </td>
             <td>Axis assignment: <select id="axis_func">
-                    <option value="a">(custom) by a</option>
-                    <option value="b">(custom) by b</option>
-                    <option value="deg">by degree</option>
-                    <option value="cc">by clustering coeff.</option>
             </select></td>
             <td>Radius assignment: <select id="radius_func">
-                    <option value="a">(custom) by a</option>
-                    <option value="b">(custom) by b</option>
-                    <option value="deg">by degree</option>
-                    <option value="cc">by clustering coeff.</option>
             </select></td>
         </tr>
         </table>
@@ -63,7 +54,7 @@
         <div id="node-stats"></div>
         <div id="vis"></div>
         <div id="vis_force"></div>
-        <div class="hfill"/>
+        <div class="hfill"></div>
         <br/>
         <h2>Data dump</h2>
         <div id="data-dump"></div>
@@ -73,44 +64,63 @@
 <script src="lib/d3.v3.min.js"></script>
 <script src="d3.hive.v0.dev.js"></script>
 <script src="hp.js"></script>
+<script src="hp_force.js"></script>
 <script>
-/**************************** graph creation ******************************/
-// read query string, from Stackoverflow somewhere...
-var queryString = {};
-location.search.substr(1)
-    .split("&").forEach(function(item)
-            {queryString[item.split("=")[0]] = item.split("=")[1]});
-
-["nodes", "links"].forEach(function(x) {
-    if (queryString[x] !== undefined) config[x] = +queryString[x];
-});
-["draw_nodes", "draw_force"].forEach(function(x) {
-    if (queryString[x] !== undefined) config[x] = !config[x];
-});
-
-    // write data statistics
-    d3.select('div#node-stats')
-        .append('p')
-        .text('Node count: ' + nodes.length +
-              '; link count: ' +  links.length);
+// write data statistics
+var vis = draw_hp_force();
+function redraw() {
+    obj_keys(vis.svg).map(function(svg) {
+        vis.svg[svg].remove();
+    })
+    vis = draw_hp_force(vis.nodes, vis.links);
+}
+d3.select('div#node-stats')
+    .append('p')
+    .text('Node count: ' + vis.nodes.length +
+          '; link count: ' +  vis.links.length);
 
 
-$("div#data-dump").text(JSON.stringify({nodes:nodes, links:links}, null, 2));
+$("div#data-dump").text(JSON.stringify({nodes:vis.nodes, links:vis.links}, null, 2));
 
-draw_hive_plot(svg, angle, radius, nodes, links, config.draw_nodes,
-    toggle_select_node, toggle_select_link, innerRadius, outerRadius, 8, 7,
-    radius_assign[radius_by_what],
-    axis_assign[axis_by_what],
-    function(d, i, islink) {
-        if (islink) d = nodes[d.source];
-        return !islink ? color(d.a) : d.max_deg ? color(d.a) : "#444";
-    });
+function obj_keys(obj) {
+    keys = [];
+    for (var i in obj)
+        if (obj.hasOwnProperty(i))
+            keys.push(i);
+    return keys;
+}
 
-draw_color_legend("node.a", function(d) {return d;}, color);
+d3.select("select#axis_func")
+    .attr("onchange", "axis_by_what=this.value; redraw();")
+    .selectAll("option")
+    .data(obj_keys(axis_assign))
+  .enter().append("option")
+    .attr("value", function(i) {return i;})
+    .text(function(i) {return i.replace("_", " ");});
 
-if (config.draw_force)
-    draw_force_directed(nodes, links);
+d3.select("select#radius_func")
+    .attr("onchange", "axis_by_what=this.value; redraw();")
+    .selectAll("option")
+    .data(obj_keys(radius_assign))
+  .enter().append("option")
+    .attr("value", function(i) {return i;})
+    .text(function(i) {return i.replace("_", " ");});
 
+d3.select("input#node_count")
+    .attr("onchange", "update_config('nodes', this.value); redraw();");
+
+d3.select("input#link_count")
+    .attr("onchange", "update_config('links', this.value); redraw();");
+
+d3.select("input#draw_nodes")
+.attr("onchange", "console.log(this.value);")
+
+d3.select("input#draw_links")
+
+// should update query string
+function update_config(k, new_k) {
+    config[k] = new_k;
+}
 </script>
 </body>
 </html>

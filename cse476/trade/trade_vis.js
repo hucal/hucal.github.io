@@ -7,13 +7,43 @@ if (typeof String.prototype.startsWith != 'function') {
 }
 
 
+// data manager
+var data_man = mk_data_man();
+
+// globals for scaling and the focused node
+var min = 0.0000001,
+    extrema = { min: extreme_keeper(), max: extreme_keeper() };
+
+var flow_scale;
+
+// COLOR AND DATA RANGE
+var compact_frm = d3.format('.1s');
+function compact_money(n) { return compact_frm(n * 1E6) + ' USD'};
+
+var frm = d3.format(',.2f')
+function money(n) { return frm(n) + ' million USD'; }
+
+// color management
+var categories = 5,
+    color = {
+    natural: d3.scale.ordinal().domain(d3.range(categories + 1))
+        .range(colorbrewer.RdPu[categories + 1]),
+    integer: d3.scale.ordinal().domain(d3.range(categories + 1))
+        .range(colorbrewer.RdYlGn[categories + 1])
+    };
+
+
+
+
+
+
 /********************************************************** */
-var ws = d3.select('#elements_info');
 
 function selected_elements(elems) {
+    var ws = d3.select('#elements_info');
     var ws_data = ws.selectAll('.element_info')
         // don't identify data using its list index
-        .data(elems, function(d) { return d.trade_info.ccode; });
+        .data(elems, function(d) { return d.ccode; });
 
     ws_data.exit()
         .style('color', 'white')
@@ -32,14 +62,13 @@ function selected_elements(elems) {
    .style('background', 'white');
 
    ws_new.append('h3')
-   .text(function (d) { return d.trade_info.name + ' - ' + d.trade_info.year; });
+   .text(function (d) { return d.name + ' - ' + d.year; });
 
    var flows = [],
        dic = extrema.max.flow_types();
    for (var k in dic)
        flows.push([k, dic[k]]);
    ws_new.each(function (d) {
-       d = d.trade_info;
        ws_new.selectAll('p')
        .data(flows)
        .enter().append('p')
@@ -54,15 +83,6 @@ function selected_elements(elems) {
 
 
 
-
-
-
-/***************************************************** COLOR AND DATA RANGE **/
-var compact_frm = d3.format('.1s');
-function compact_money(n) { return compact_frm(n * 1E6) + ' USD'};
-
-var frm = d3.format(',.2f')
-function money(n) { return frm(n) + ' million USD'; }
 
 
 
@@ -103,8 +123,6 @@ function mk_scale() {
         ;
 }
 
-var flow_scale;
-
 function get_highlight_fill(d, i){
     return color[extrema.max.color_type()](flow_scale(
                 extrema.min.node_flow(d)));
@@ -133,10 +151,6 @@ function extrema_reflow() {
 }
 
 
-
-// globals for scaling and the focused node
-var min = 0.0000001,
-    extrema = { min: extreme_keeper(), max: extreme_keeper() };
 
 function basic_stats() {
     return { 'flow1': min, 'flow2': min };
@@ -203,16 +217,6 @@ function extreme_keeper () {
 
     return stat;
 }
-
-// color management
-var categories = 5,
-    color = {
-    natural: d3.scale.ordinal().domain(d3.range(categories + 1))
-        .range(colorbrewer.RdPu[categories + 1]),
-    integer: d3.scale.ordinal().domain(d3.range(categories + 1))
-        .range(colorbrewer.RdYlGn[categories + 1])
-};
-
 
 
 
@@ -366,7 +370,7 @@ function geo_vis(root, topology, dm, width, height) {
                     selected_elements([]);
                     return;
                 }
-                selected_elements([d]);
+                selected_elements([d.trade_info]);
                 focus_code = d.properties.COWCODE;
 
                 // make everything invisible
@@ -422,22 +426,19 @@ function geo_vis(root, topology, dm, width, height) {
 
 
 
-
-
-/********************************************************** TODO SANKEY */
-
-function sankey_vis(root, topology, dm, width, height) {
+/********************************************************** TODO HIVE PLOT */
+function hp_vis(root, dm, width, height) {
     var svg, g,
         data_man = dm,
-        topology = topology,
+        root = root,
+        lasso = d3.lasso(),
         year = '1870';
-    ////wtf....
-        width = width ? width : 800,
-        height = height ? height : 500;
+    width = width ? width : 700,
+    height = height ? height : 700;
 
     vis = function () {
         if (svg !== undefined) svg.remove();
-        //....
+        data_man.call_with_data(year, draw);
         return vis;
     }
 
@@ -457,196 +458,164 @@ function sankey_vis(root, topology, dm, width, height) {
         extrema.min.current_flow(current_flow);
         extrema.max.current_flow(current_flow);
         extrema_reflow();
-        g.selectAll('.feature')
-            .style('fill', focus_code ? get_highlight_fill
-                                      : get_neutral_fill);
         return vis;
     }
 
-    draw = function(trade_data, by_ccode) {
+    draw = function(graph, by_ccode) {
+        extrema.max.year(year);
+        extrema.min.year(year);
+        svg = root.append('svg')
+            .attr('width', width)
+            .attr('height', height);
 
+
+
+
+
+    var g = svg.append("g")
+        .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+
+    var hive_plot = mk_hive_plot()
+            .svg(g)
+            .innerRadius(20)
+            .outerRadius(width/2 - 30)
+            .node_height(6)
+            .node_width (6);
+
+    var ex = find_degree(graph.nodes, graph.links);
+    var min_deg = graph.nodes[ex[0]],
+        max_deg = graph.nodes[ex[1]];
+
+    graph.nodes[ex[1]].max_targets = true;
+
+    var angle = d3.scale.ordinal().domain(d3.range(0,3))
+            .rangePoints([0, 4/3 * Math.PI]),
+        radius = d3.scale.linear()
+            .range ([hive_plot.innerRadius(), hive_plot.outerRadius()])
+            .domain([min_deg.deg, max_deg.deg]);
+
+    //clone axes
+    var rng = angle.range();
+    rng[0] = [rng[0], rng[0] - Math.PI / 6];
+    rng[2] = [rng[2]];
+    rng[1] = [rng[1]];
+    angle.range(rng);
+
+    function nada() {return;}
+    var col_high = "red",
+        col_low = "#444";
+    hive_plot
+        .angle(angle)
+        .radius(radius)
+        .nodes(graph.nodes)
+        .links(graph.links)
+        .toggle_select_node(toggle_select_node)
+        .elem_radius(function(d) { return radius(d.deg); })
+        .elem_angle(function(d) { return angle(
+            (d.deg_in === 0 && d.deg_out > 0) ? 2 :
+            (d.deg_out === 0 && d.deg_in > 0) ? 1 :
+            0
+            ); })
+        .elem_color(function(d, i, islink) {
+            if (islink) d = graph.nodes[d.source];
+            return !islink ? col_high : d.max_targets ? col_high : col_low;
+        });
+    hive_plot();
+
+
+
+    g.selectAll("text.axis-label")
+        .data(angle.range())
+      .enter().append("text")
+        .attr("class", "axis-label")
+        .attr("x", function (d) { return 1.1 * hive_plot.outerRadius() * Math.cos(d3.mean(d)); })
+        .attr("y", function (d) { return 1.1 * hive_plot.outerRadius() * Math.sin(d3.mean(d)); })
+        .attr("text-anchor", "end")
+        .style("font-weight", "bold")
+        .text( function(d,i) { return i === 2 ? "in=0"
+            : i == 1 ? "out=0" : "in/out"; } );
+
+
+
+
+
+
+
+
+        // make lasso
+        var lasso_area = g.append("rect")
+                .attr("x", -width/2)
+                .attr("y", -height/2)
+                .attr("width",width)
+                .attr("height",height)
+                .style("opacity",0);
+        lasso.items(g.selectAll('.node'))
+            .closePathDistance(75)
+            .closePathSelect(true)
+            .hoverSelect(true)
+            .area(lasso_area)
+            .on("start",lasso_start) // lasso start function
+            .on("draw",lasso_draw) // lasso draw function
+            .on("end",lasso_end); // lasso end function
+        g.call(lasso);
     }
+
+
+
+    // Lasso functions to execute while lassoing
+    var lasso_start = function() {
+      lasso.items()
+        .classed({"not_possible":true,"selected":false}); // style as not possible
+    };
+
+    var lasso_draw = function() {
+  // Style the possible dots
+  lasso.items().filter(function(d) {return d.possible===true})
+      .style("stroke", "grey")
+      .style("stroke-width", "6")
+    .classed({"not_possible":false,"possible":true});
+
+  // Style the not possible dot
+  lasso.items().filter(function(d) {return d.possible===false})
+      .style("stroke", "none")
+    .classed({"not_possible":true,"possible":false});
+    };
+
+    var lasso_end = function() {
+      // selected
+        var selected = [];
+      lasso.items().filter(function(d) {return d.selected===true})
+        .classed({"not_possible":false,"possible":false})
+        .each(function(d, i){toggle_select_node(d, i); selected.push(d);});
+
+        selected_elements([]);
+        selected_elements(selected);
+
+      // not selected
+      lasso.items().filter(function(d) {return d.selected===false})
+        .classed({"not_possible":false,"possible":false})
+        .each(toggle_select_node);
+
+    };
+
+
+    //TODO  use quick node size animation to double highlight
+    function toggle_select_node(d, i) {
+        if (d.selected) {
+            d3.selectAll(".node_" + i).style("stroke", "black").style("stroke-width", 6);
+            console.log(d, i)
+        }
+        else
+            d3.selectAll(".node_" + i).style("stroke", "none");
+    }
+
+
+
+
+
     return vis;
 }
 
-/*
-var margin = {top: 10, right: 210, bottom: 10, left: 210},
-    width = 1350 - margin.left - margin.right,
-    height = 5000 - margin.top - margin.bottom,
-    layout_pad = margin.left;
-
-var  color = d3.scale.category20();
-
-// append the svg canvas to the page
-var svg = d3.select('div#vis').append('svg')
-    .attr('width', width + margin.left + margin.right)
-    .attr('height', height + margin.top + margin.bottom)
-  .append('g')
-    .attr('transform',
-          'translate(' + margin.left + ',' + margin.top + ')');
-
-
-
-
-d3.json('data/' + fname, function(error, trade_data) {
-    if (error) {
-        console.log(error);
-        return;
-    }
-    var data = trade_data.nodes;
-    data.forEach(function (d) {
-        d.targetLinks = [];
-        d.sourceLinks = [];
-        d.selected = false;
-    });
-
-    function mk_graph(get_weight)
-    {
-    graph = {
-        links: [], nodes: []
-    };
-
-    $('button[name=clear-all]').click(function (ev) {
-        d3.selectAll('.link')
-            .attr('stroke', 'none');
-    });
-
-    // index nodes by their ccode
-    by_ccode = [];
-    data.forEach(function(d, i) {
-        d.value = 40;
-        by_ccode.push(d.ccode);
-    });
-
-    var nodes_left = data;
-    var nodes_right = $.extend(true, [], data);
-    nodes_left.forEach(function (d) {
-        d.links.forEach(function (child) {
-            var child_obj = nodes_right[by_ccode.indexOf(child.ccode2)];
-            if (child_obj === undefined) return;
-            if (child.flow1 > 0)
-            graph.links.push({
-                source: d,
-                target: child_obj,
-                value: get_weight(child, d)
-            });
-        });
-    });
-
-    nodes_left.sort(total_asc)
-    graph.nodes = nodes_left.concat(nodes_right);
-    return graph;
-    }
-
-    var graph_left  = mk_graph(function(c,d){return c.flow1});
-    var graph_right = mk_graph(function(c,d){return c.flow2});
-
-    d3.select('div#stats')
-        .append('p')
-        .text('Node count: ' + trade_data.nodes.length +
-              '; left link count: ' +  graph_left.links.length +
-              '; right link count: ' + graph_right.links.length);
-
-    var sankey_left = d3.sankey()
-        .nodeWidth(80)
-        .nodePadding(20)
-        .size([width/2 - layout_pad/2, height]);
-    var sankey_right = d3.sankey()
-        .nodeWidth(80)
-        .nodePadding(20)
-        .size([width/2 - layout_pad/2, height]);
-
-
-    update(graph_left, sankey_left, svg);
-
-    var svg_right = svg.append('g')
-        .attr('transform', 'translate(' + (width/2 + layout_pad) + ',0)')
-
-    update(graph_right, sankey_right, svg_right);
-
-    function alphabetic_sort(a, b) { return a.name.localeCompare(b.name); }
-    function total_dsc(a, b) {return d3.descending(a.flow2_total + a.flow1_total,
-                                                  b.flow2_total + b.flow1_total); }
-    function total_asc(a, b) {return d3.ascending(a.flow2_total + a.flow1_total,
-                                                  b.flow2_total + b.flow1_total); }
-});
-
-
-function update(graph, sankey, parentelem) {
-// Set the sankey diagram properties
-
-// load the data
-  sankey
-      .nodes(graph.nodes)
-      .links(graph.links)
-      .layout(0);
-    var path = sankey.link();
-
-// add in the links
-  var link = parentelem.append('g').selectAll('.link')
-      .data(graph.links)
-    .enter().append('path')
-    .attr('class', function(d) {
-        return 'link link_to_' + d.target.name.replace(/ /g, '_')
-             + ' link_from_' + d.source.name.replace(/ /g, '_');
-    })
-      .attr('d', path)
-      .attr('stroke', 'none')//function (d) {
-      *//*
-//		  return color(d.source.name.replace(/ .*/
-//		  //, '')); })
-//
-/*
-      .style('stroke-width', function(d) { return Math.max(1, d.dy); })
-      .sort(function(a, b) { return b.dy - a.dy; });
-
-// add the link titles
-//  link.append('title');
-
-// add in the nodes
-  var node = parentelem.append('g').selectAll('.node')
-      .data(graph.nodes)
-    .enter().append('g')
-      .attr('class', 'node')
-      .attr('transform', function(d) {
-		  return 'translate(' + d.x + ',' + d.y + ')'; })
-      .on('click', function(d) {
-        d.selected = !d.selected;
-        d3.selectAll('.link_to_' + d.name.replace(/ /g, '_'))
-            .attr('stroke', d.selected ? d.color : 'none');
-      })
-    ;
-    node.filter(function(d) { return d.x < sankey.size()[0] / 2; })
-      .on('click', function(d) {
-        d.selected = !d.selected;
-        d3.selectAll('.link_from_' + d.name.replace(/ /g, '_'))
-            .attr('stroke', d.selected ? d.color : 'none');
-      })
-
-// add the rectangles for the nodes
-  node.append('rect')
-      .attr('height', function(d) { return d.dy + 1; })
-      .attr('width', sankey.nodeWidth())
-      .style('fill', function(d) {
-		  return d.color = color(d.name.replace(/ .*/
-//, '')); })
-/*
-      .style('stroke', function(d) {
-		  return d3.rgb(d.color).darker(2); });
-
-// add in the title for the nodes
-  node.append('text')
-      .attr('x', 6 + sankey.nodeWidth())
-      .attr('y', function(d) { return d.dy / 2; })
-      .attr('dy', '.35em')
-      .attr('text-anchor', 'start')
-      .attr('transform', null)
-      .text(function(d) { return d.name; })
-    .filter(function(d) { return d.x < sankey.size()[0] / 2; })
-      .attr('x', -6)
-      .attr('text-anchor', 'end');
-}
-*/
 
 
 
@@ -723,49 +692,20 @@ function mk_data_man () {
     return man;
 }
 
-var data_man = mk_data_man();
 
-/********************************************************** TODO HIVE PLOT */
-function hp_vis(root, topology, dm, width, height) {
-    var svg, g,
-        data_man = dm,
-        topology = topology,
-        year = '1870';
-    ////wtf....
-        width = width ? width : 800,
-        height = height ? height : 500;
 
-    vis = function () {
-        if (svg !== undefined) svg.remove();
-        //....
-        return vis;
-    }
 
-    vis.g = function() { return g; }
-    vis.svg = function() { return svg; }
-    vis.year = function (_) {
-        if (!arguments.length) return year;
-        year = _;
-        return vis;
-    }
 
-    // change scale, recolor
-    vis.current_flow = function(current_flow) {
-        extrema.max.year(year);
-        extrema.min.year(year);
 
-        extrema.min.current_flow(current_flow);
-        extrema.max.current_flow(current_flow);
-        extrema_reflow();
-        g.selectAll('.feature')
-            .style('fill', focus_code ? get_highlight_fill
-                                      : get_neutral_fill);
-        return vis;
-    }
 
-    draw = function(trade_data, by_ccode) {
 
-    }
-    return vis;
-}
+
+
+
+
+
+
+
+
+
 
