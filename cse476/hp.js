@@ -189,14 +189,16 @@ function draw_color_legend(title, get_name, color, where) {
     var legend = where.append("svg")
         .attr("class", "legends")
         .attr("width", 36 * Math.max(color.domain().length))
-        .attr("height", 100)
-        .append("g").attr("transform", "translate(5,20)"); // margins
+        .attr("height", 100);
 
-    legend.append("text")
+    var g = legend.append("g")
+            .attr("transform", "translate(5,20)"); // margins
+
+    g.append("text")
         .attr("class", "legend-title")
         .text(title);
 
-    legend_elems = legend.selectAll("g.legend-elem")
+    legend_elems = g.selectAll("g.legend-elem")
         .data(color.domain())
       .enter().append("g")
         .attr("class", "legend-elem")

@@ -170,6 +170,7 @@ function draw_hp_force(nodes, links) {
 }
 
 /**************************** FORCE DIRECTED LAYOUT **************************/
+///// by mike bostock: http://bl.ocks.org/mbostock/1153292
 function draw_force_directed(nodes, links) {
     //
     //
@@ -187,7 +188,7 @@ function draw_force_directed(nodes, links) {
         .on("tick", tick)
         .start();
 
-    var svg_force = d3.select("div#vis_force").append("svg")
+    var svg_force = d3.select("div#vis").append("svg")
         .attr("width", width/2)
         .attr("height", height/2)
         .attr("class", "vis_force")
@@ -259,7 +260,6 @@ function draw_force_directed(nodes, links) {
     //TODO  use quick node size animation to double highlight
     function toggle_select_node(d, i) {
         if (d._selected = !d._selected) {
-            console.log(d);
             d3.selectAll(".node_" + i).style("stroke", "black").style("stroke-width", 6);
         }
         else

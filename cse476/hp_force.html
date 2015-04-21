@@ -21,6 +21,8 @@
 
         <p><a href=http://hiveplot.net/>Hive Plot</a> and Force Layout brushing
         visualization.
+        Made using D3, the D3 Hive Plot plugin, and the force directed layout
+        is from <a href="http://bl.ocks.org/mbostock/1153292">one of Mike Bostock's concise bl.ocks</a>.
         Click nodes and links on either vis.
         Data is randomly generated on page load.
 
@@ -69,18 +71,27 @@
 // write data statistics
 var vis = draw_hp_force();
 function redraw() {
-    obj_keys(vis.svg).map(function(svg) {
-        vis.svg[svg].remove();
+    obj_keys(vis.svg).map(function(k) {
+        vis.svg[k].remove();
     })
-    vis = draw_hp_force(vis.nodes, vis.links);
+    if (config.nodes != vis.nodes.length || config.links != vis.links.length) {
+        $("div#data-dump")
+            .text(JSON.stringify({nodes:vis.nodes, links:vis.links}, null, 2));
+        vis = draw_hp_force();
+    } else {
+        vis = draw_hp_force(vis.nodes, vis.links);
+    }
+    d3.select('div#node-stats p')
+    .text('Node count: ' + vis.nodes.length +
+          '; link count: ' +  vis.links.length);
 }
 d3.select('div#node-stats')
     .append('p')
     .text('Node count: ' + vis.nodes.length +
           '; link count: ' +  vis.links.length);
 
-
 $("div#data-dump").text(JSON.stringify({nodes:vis.nodes, links:vis.links}, null, 2));
+
 
 function obj_keys(obj) {
     keys = [];
