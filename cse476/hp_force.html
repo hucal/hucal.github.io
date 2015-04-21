@@ -124,7 +124,10 @@ d3.select("input#link_count")
     .attr("onchange", "update_config('links', this.value); redraw();");
 
 d3.select("input#draw_nodes")
-.attr("onchange", "console.log(this.value);")
+.attr("onchange", "config.draw_nodes=this.checked; redraw(); ")
+
+d3.select("input#draw_force")
+.attr("onchange", "config.draw_force=this.checked; redraw(); ")
 
 d3.select("input#draw_links")
 

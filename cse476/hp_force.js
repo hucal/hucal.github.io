@@ -18,13 +18,12 @@ location.search.substr(1)
 });
 
 
-var width  = 770,
-    height = 800,
+var width  = height = 570,
     hive_plot = mk_hive_plot()
     .innerRadius(20)
-    .outerRadius(340)
-    .node_height(2)
-    .node_width (6)
+    .outerRadius(240)
+    .node_height(6)
+    .node_width (9)
     .opacity(0.2)
 
 
