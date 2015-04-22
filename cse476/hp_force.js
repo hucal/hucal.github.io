@@ -23,10 +23,10 @@ location.search.substr(1)
 });
 
 
-var width  = height = 570,
+var width = height = 440,
     hive_plot = mk_hive_plot()
     .innerRadius(20)
-    .outerRadius(240)
+    .outerRadius(width / 2 - 40)
     .node_height(6)
     .node_width (9)
     .opacity(0.5)
@@ -186,20 +186,22 @@ function draw_force_directed(nodes, links) {
     //
     // this layout modifies the links array, give it a deep copy
     //
-    var links_force = $.extend(true, [], links);
+    var links_force = $.extend(true, [], links),
+        force_width = width/2,
+        force_height = height;
 
     var force = d3.layout.force()
         .nodes(d3.values(nodes))
         .links(links_force)
-        .size([width, height])
+        .size([force_width, force_height])
         .linkDistance(60)
         .charge(-300)
         .on("tick", tick)
         .start();
 
     var svg_force = d3.select("div#vis").append("svg")
-        .attr("width", width)
-        .attr("height", height)
+        .attr("width", force_width)
+        .attr("height", force_height)
         .attr("class", "vis_force")
 
     // Per-type markers, as they don't inherit styles.
@@ -241,7 +243,7 @@ function draw_force_directed(nodes, links) {
     svg_force.append("text")
         .attr("fill", "black")
         .attr("y", height / 12)
-        .attr("x", width / 4)
+        .attr("x", force_width / 2)
         .attr("font-size", "0.8em")
         .attr("font-style", "italic")
         .attr("font-weight", "bold")
