@@ -29,11 +29,6 @@ text.axis-label, text.axis-angle, text.title {
 text.axis-label, text.title {font-weight: bold}
 text.title {font-size: 1.5em;}
 
-body {
-    text-align: center;
-    min-width: 900px;
-}
-
 .legend-title {
     font-style: italic;
     font-size: 1em;

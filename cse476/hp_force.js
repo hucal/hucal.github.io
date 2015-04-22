@@ -48,14 +48,22 @@ function draw_hp_force(nodes, links) {
 
     // 0,1,2 -> 3 angles
     angle = d3.scale.ordinal().domain(d3.range(0,3)).rangePoints([0, 4/3 * Math.PI]);
+    var rng = angle.range();
+    if (config.axis_by_what.endsWith("directed")) {
+        rng[2] = [rng[2], rng[2] - Math.PI / 6];
+        rng[0] = [rng[0]];
+        rng[1] = [rng[1]];
+    }
+    else {
+        rng = rng.map(function(a) {return [a, a-Math.PI/6]})
+    }
+    console.log(angle.range(), rng);
+    angle.range(rng);
+
     // 0..1 -> radius
     radius = d3.scale.linear().range([hive_plot.innerRadius(), hive_plot.outerRadius()]);
     // 0,1,2 -> 3 colors
     color = d3.scale.ordinal().domain(d3.range(3)).range(colorbrewer.Dark2[4]);
-
-    //clone axes
-    angle.range(angle.range().map(function (angle, ix)
-                { return [angle, angle + Math.PI / 6] }));
 
 
     // prepare SVG document
@@ -187,7 +195,7 @@ function draw_force_directed(nodes, links) {
     // this layout modifies the links array, give it a deep copy
     //
     var links_force = $.extend(true, [], links),
-        force_width = width/2,
+        force_width = width * 0.75,
         force_height = height;
 
     var force = d3.layout.force()
