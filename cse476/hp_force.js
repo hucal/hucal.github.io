@@ -1,10 +1,10 @@
 config = {}
-config.nodes = 33;
-config.links = 100;
+config.nodes = 10;
+config.links = 25;
 config.draw_nodes = true;
 config.draw_force = true;
 config.radius_by_what = "by_deg_rel",
-config.axis_by_what = "by_deg_thirds";
+config.axis_by_what = "by_deg_directed";
 
 
 
@@ -43,6 +43,32 @@ var axis_text,
     axis_assign,
     radius_assign;
 
+
+function mk_tips(svg) {
+    // draw tutorial popovers
+
+    var tip = d3.tip()
+      .attr('class', 'd3-tip')
+      .offset([-10, 0])
+      .html(function(d) {return d;});
+    svg.call(tip);
+
+    svg.selectAll('.node')
+        .on("mouseover", function(d) {
+            tip.show('<p>Node: ' + 'a=' + d.a + ', b=' + d.b + ' degree=' + d.deg + ' nn=' + d.nn
+                    + '</p><p>indeg=' + d.deg_in + ' outdeg=' + d.deg_out + ' in_nn=' + d.nn_in.length + ' out_nn=' + d.nn_out.length + '</p>'
+                    )
+        })
+    svg.selectAll('.axes, .node')
+        .on("mouseout", function() {
+            tip.hide()
+        })
+    return tip;
+}
+
+
+
+
 function draw_hp_force(nodes, links) {
     var result = {svg:{}};
 
@@ -57,7 +83,6 @@ function draw_hp_force(nodes, links) {
     else {
         rng = rng.map(function(a) {return [a, a-Math.PI/6]})
     }
-    console.log(angle.range(), rng);
     angle.range(rng);
 
     // 0..1 -> radius
@@ -179,14 +204,26 @@ function draw_hp_force(nodes, links) {
     result.nodes = nodes;
     result.links = links;
 
-
-
-
-
+    result.mk_tut_tips = function() {
+        console.log(mk_tips);
+        var tip = mk_tips(svg);
+        return (function () {
+            svg.selectAll('g.axes.axes2')
+                .on("mouseover", function(d) {
+                    tip.show('Cloned axis')
+                })
+            svg.selectAll('.axes0, .axes1')
+                .on("mouseover", function(d) {
+                    tip.show('Axis')
+                })
+        });
+    }();
 
 
     return result;
 }
+
+
 
 /**************************** FORCE DIRECTED LAYOUT **************************/
 ///// by mike bostock: http://bl.ocks.org/mbostock/1153292
@@ -302,6 +339,7 @@ function draw_force_directed(nodes, links) {
 
 
 
+    mk_tips(svg_force);
 
 
     return svg_force;

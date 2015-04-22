@@ -125,7 +125,7 @@ function mk_hive_plot() {
         g.selectAll("g.axis")
             .data(angle.range())
           .enter().append("g")
-            .attr("class", function (d,i) { return "axes" + i; })
+            .attr("class", function (d,i) { return "axes axes" + i; })
             .selectAll("line")
             .data(function(d) { return d; })
           .enter()

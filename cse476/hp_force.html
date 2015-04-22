@@ -13,6 +13,7 @@
         <link rel="stylesheet" href="../css/main.css">
         <link rel="stylesheet" href="hp_force.css">
         <link rel="stylesheet" href="trade/style.css">
+        <link rel="stylesheet" href="d3_tips.css">
         <script src="../js/vendor/modernizr-2.8.3.min.js"></script>
         <style>
 body{ max-width: 1200px; }
@@ -62,6 +63,8 @@ body{ max-width: 1200px; }
       	width:400px;
         background: white;
       }
+
+
         </style>
     </head>
     <body>
@@ -73,7 +76,7 @@ body{ max-width: 1200px; }
         visualization.
         Made using D3, the D3 Hive Plot plugin, and the force directed layout
         is from <a href="http://bl.ocks.org/mbostock/1153292">one of Mike Bostock's bl.ocks</a>.
-        Click nodes and links on either vis.
+        Click nodes and links on either one.
         Data is randomly generated on page load.
 
         <p style="text-align:center">
@@ -116,29 +119,36 @@ body{ max-width: 1200px; }
 <link rel="stylesheet" href="lib/bootstrap/css/bootstrap.css"></link>
 
 <script src="lib/d3.v3.min.js"></script>
+<script src="lib/d3-tip.js">   </script>
 <script src="d3.hive.v0.dev.js"></script>
+
 <script src="hp.js"></script>
 <script src="hp_force.js"></script>
 <script>
 // write data statistics
-$(document).ready(function(){
-var vis = draw_hp_force();
+var hp_force_vis;
 function redraw() {
     d3.selectAll("div#vis div").remove();
-    if (config.nodes != vis.nodes.length || config.links != vis.links.length) {
+    if (config.nodes != hp_force_vis.nodes.length || config.links != hp_force_vis.links.length) {
         $("div#data-dump")
-            .text(JSON.stringify({nodes:vis.nodes, links:vis.links}, null, 2));
+            .text(JSON.stringify({nodes:hp_force_vis.nodes, links:hp_force_vis.links}, null, 2));
         vis = draw_hp_force();
     } else {
-        vis = draw_hp_force(vis.nodes, vis.links);
+        vis = draw_hp_force(hp_force_vis.nodes, hp_force_vis.links);
     }
     d3.selectAll('div#node-stats p').remove();
     d3.select('div#node-stats').append('p')
-    .text('Node count: ' + vis.nodes.length +
-          '; link count: ' +  vis.links.length);
+    .text('Node count: ' + hp_force_vis.nodes.length +
+          '; link count: ' +  hp_force_vis.links.length);
 }
+
+
+
+
+$(document).ready(function(){
+hp_force_vis = draw_hp_force();
 $("div#data-dump")
-    .text(JSON.stringify({nodes:vis.nodes, links:vis.links}, null, 2));
+    .text(JSON.stringify({nodes:hp_force_vis.nodes, links:hp_force_vis.links}, null, 2));
 
 function obj_keys(obj) {
     keys = [];
@@ -195,6 +205,7 @@ var explain_assign = {
     by_nn_rel: 'Same as by nn, but scaled to fit entire axis.'
 }
 
+var hive_plot_index = 1;//3;
 var bootstro_items =
     [ {selector: 'div#data-dump',
         title: 'Data',
@@ -202,20 +213,20 @@ var bootstro_items =
         step: 0}
     , {selector: 'div#vis',
         title: 'Visualizations.',
-        content: 'These are better visualizations of this same data. Click the nodes and links!',
+        content: 'These are better visualizations of the data. Click the nodes and links!',
         placement:'top',
         step: 1}
     , {selector: 'div.vis_force',
         title: 'Directed Force Layout',
         placement: 'left',
-        content: 'A straightforward way of showing a network.',
-        step: 2}
+        content: 'A straightforward way of showing a network. Nodes are circles and links are the curves. This visualization does not scale well for larger datasets.',
+        step: 0}//2}
     , {selector: 'div.vis_hp',
         title: 'Hive Plot',
         placement: 'right',
-        content: 'Once you get the hang of it, Hive Plots make it easy to analyze and compare networks. This one has six axes, check the axis assignment for more information. Nodes are split into one or two axis each, links are drawn between related nodes.',
-        step: 3}
-    , {selector: 'table#input',
+        content: 'Hive Plots make it easy to analyze and compare large networks.',
+        step: hive_plot_index}
+     , {selector: 'table#input',
         title: 'Input',
         width: '300px',
         placement: 'bottom',
@@ -228,7 +239,7 @@ var bootstro_items =
         content: 'Generate new random data by adjusting these counters.',
         step: 5}
     , {selector: 'input#draw_nodes',
-        title: 'Speed up display',
+        title: 'Speed up the display',
         width: '300px',
         placement: 'bottom',
         content: 'by turning off the force directed layout and by not drawing Hive Plot nodes',
@@ -261,19 +272,25 @@ var bootstro_items =
 
 
 d3.select("button#begin_tut")
-.on("click", function() { bootstro.start('', {
-    items: bootstro_items,
-    stopOnBackdropClick: false
-}) });
+.on("click", function() {
+    bootstro.start('', {
+        items: bootstro_items,
+        stopOnBackdropClick: false,
+    })
+});
 
 d3.select("button#assignment_tut")
 .on("click", function() { bootstro.start('', {items: bootstro_items.slice(-2)}) });
+});
 
 // should update query string
 function update_config(k, new_k) {
     config[k] = new_k;
 }
-});
+
+
+
+
 </script>
 </body>
 </html>
