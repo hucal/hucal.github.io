@@ -12,6 +12,7 @@
         <link rel="stylesheet" href="../css/normalize.css">
         <link rel="stylesheet" href="../css/main.css">
         <link rel="stylesheet" href="hp_force.css">
+        <link rel="stylesheet" href="trade/style.css">
         <script src="../js/vendor/modernizr-2.8.3.min.js"></script>
     </head>
     <body>
@@ -22,7 +23,7 @@
         <p><a href=http://hiveplot.net/>Hive Plot</a> and Force Layout brushing
         visualization.
         Made using D3, the D3 Hive Plot plugin, and the force directed layout
-        is from <a href="http://bl.ocks.org/mbostock/1153292">one of Mike Bostock's concise bl.ocks</a>.
+        is from <a href="http://bl.ocks.org/mbostock/1153292">one of Mike Bostock's bl.ocks</a>.
         Click nodes and links on either vis.
         Data is randomly generated on page load.
 
@@ -32,13 +33,13 @@
         <table>
         <tr>
             <td/>
-            <td>Nodes: <input id="node_count" type="number" min="0" value="40"> </td>
-            <td>Links: <input id="link_count" type="number" min="0" value="80"> </td>
+            <td>Nodes: <input id="node_count" type="number" min="0" value="10"> </td>
+            <td>Links: <input id="link_count" type="number" min="0" value="15"> </td>
             <td/>
         </tr>
         <tr>
-            <td><input id="draw_nodes" type="checkbox">draw nodes? </td>
-            <td><input id="draw_force" type="checkbox">draw force layout? </td>
+            <td><input id="draw_nodes" type="checkbox" checked="checked">draw nodes? </td>
+            <td><input id="draw_force" type="checkbox" checked="checked">draw force layout? </td>
             <td>Axis assignment: <select id="axis_func">
             </select></td>
             <td>Radius assignment: <select id="radius_func">
@@ -46,13 +47,6 @@
         </tr>
         </table>
 
-        <p>To change graph config, use the query string. UI will be improved...</p>
-        <p><a href=hp_force.html?nodes=10&links=40>nodes=10, links=40</a></p>
-        <p><a href=hp_force.html?nodes=100&links=100>nodes=100, links=100</a></p>
-        <p><a href=hp_force.html?nodes=900&links=400&draw_force=0>nodes=900, links=400, and
-        don't draw force layout</a></p>
-        <p><a href=hp_force.html?nodes=1000&links=3000&draw_force=0&draw_nodes=0>nodes=1000, links=3000,
-        don't draw HP nodes, and don't draw Force Layout</a></p>
         <div id="node-stats"></div>
         <div id="vis"></div>
         <div id="vis_force"></div>
@@ -71,9 +65,7 @@
 // write data statistics
 var vis = draw_hp_force();
 function redraw() {
-    obj_keys(vis.svg).map(function(k) {
-        vis.svg[k].remove();
-    })
+    d3.selectAll("div#vis svg").remove();
     if (config.nodes != vis.nodes.length || config.links != vis.links.length) {
         $("div#data-dump")
             .text(JSON.stringify({nodes:vis.nodes, links:vis.links}, null, 2));
@@ -81,17 +73,13 @@ function redraw() {
     } else {
         vis = draw_hp_force(vis.nodes, vis.links);
     }
-    d3.select('div#node-stats p')
+    d3.selectAll('div#node-stats p').remove();
+    d3.select('div#node-stats').append('p')
     .text('Node count: ' + vis.nodes.length +
           '; link count: ' +  vis.links.length);
 }
-d3.select('div#node-stats')
-    .append('p')
-    .text('Node count: ' + vis.nodes.length +
-          '; link count: ' +  vis.links.length);
-
-$("div#data-dump").text(JSON.stringify({nodes:vis.nodes, links:vis.links}, null, 2));
-
+$("div#data-dump")
+    .text(JSON.stringify({nodes:vis.nodes, links:vis.links}, null, 2));
 
 function obj_keys(obj) {
     keys = [];
@@ -102,25 +90,31 @@ function obj_keys(obj) {
 }
 
 d3.select("select#axis_func")
-    .attr("onchange", "axis_by_what=this.value; redraw();")
+    .attr("onchange", "config.axis_by_what=this.value; redraw();")
     .selectAll("option")
     .data(obj_keys(axis_assign))
   .enter().append("option")
+    .each(function(d) { if (d === config.axis_by_what)
+        d3.select(this).attr("selected", "selected"); })
     .attr("value", function(i) {return i;})
-    .text(function(i) {return i.replace("_", " ");});
+    .text(function(i) {return i.replace(/_/g, " ");});
 
 d3.select("select#radius_func")
-    .attr("onchange", "axis_by_what=this.value; redraw();")
+    .attr("onchange", "config.radius_by_what=this.value; redraw();")
     .selectAll("option")
     .data(obj_keys(radius_assign))
   .enter().append("option")
+    .each(function(d) { if (d === config.radius_by_what)
+        d3.select(this).attr("selected", "selected"); })
     .attr("value", function(i) {return i;})
-    .text(function(i) {return i.replace("_", " ");});
+    .text(function(i) {return i.replace(/_/g, " ");});
 
 d3.select("input#node_count")
+    .attr("value", config.nodes)
     .attr("onchange", "update_config('nodes', this.value); redraw();");
 
 d3.select("input#link_count")
+    .attr("value", config.links)
     .attr("onchange", "update_config('links', this.value); redraw();");
 
 d3.select("input#draw_nodes")

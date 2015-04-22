@@ -1,8 +1,13 @@
 config = {}
-config.nodes = 20;
-config.links = 40;
+config.nodes = 25;
+config.links = 100;
 config.draw_nodes = true;
 config.draw_force = true;
+config.radius_by_what = "by_deg_rel",
+config.axis_by_what = "by_deg_thirds";
+
+
+
 
 // read query string, from Stackoverflow somewhere...
 var queryString = {};
@@ -24,39 +29,28 @@ var width  = height = 570,
     .outerRadius(240)
     .node_height(6)
     .node_width (9)
-    .opacity(0.2)
+    .opacity(0.5)
 
 
 
 
 
-    var angle, radius, color;
+    var angle, radius, color,
+        deg_minmax, nn_minmax, cc_minmax;
 
-var radius_by_what = "by_b",
-    axis_by_what = "by_a";
-var radius_assign = {
-    by_b: function(d) { return radius(d.b); }
-};
 
-var axis_assign = {
-    by_deg: function(d, i)
-    { return angle((d.deg === 1 || d.deg === 0) ? 2 :
-            d.deg === 2 ?  1 : 0) },
-    by_a: function(d, i)
-    { return angle(d.a); }
-};
+var axis_text,
+    axis_assign,
+    radius_assign;
 
-var axis_text = {
-    by_deg: function(d, i)
-    { return i === 1 ? "deg = 2" : i == 2 ? "deg < 2" : "deg > 2"; },
-    by_a : function(d, i)
-    { return "a=" + i; }
-};
 function draw_hp_force(nodes, links) {
     var result = {svg:{}};
 
+    // 0,1,2 -> 3 angles
     angle = d3.scale.ordinal().domain(d3.range(0,3)).rangePoints([0, 4/3 * Math.PI]);
+    // 0..1 -> radius
     radius = d3.scale.linear().range([hive_plot.innerRadius(), hive_plot.outerRadius()]);
+    // 0,1,2 -> 3 colors
     color = d3.scale.ordinal().domain(d3.range(3)).range(colorbrewer.Dark2[4]);
 
     //clone axes
@@ -78,8 +72,24 @@ function draw_hp_force(nodes, links) {
 
     // TODO more node classification functions
     // cc, nn, ccnn, degree, user-defined
-    var minmax = find_degree(nodes, links);
-    nodes[minmax[1]].max_deg = true;
+    deg_minmax = find_degree(nodes, links, true);
+    nn_minmax  = find_next_neighbors(nodes, links);
+    cc_minmax  = find_cc(nodes, links);
+    nodes[deg_minmax.max].max_by_deg = true;
+    nodes[nn_minmax .max].max_by_nn = true;
+    //nodes[cc_minmax .max] .max_by_cc = true;
+
+
+    var as = mk_assigners(nn_minmax, deg_minmax, cc_minmax, radius, angle);
+        axis_text = as.axis_text,
+        axis_assign = as.axis_assign,
+        radius_assign = as.radius_assign;
+
+
+
+
+
+
 
     hive_plot
         .svg(hive_g)
@@ -91,12 +101,12 @@ function draw_hp_force(nodes, links) {
         .toggle_select_node(toggle_select_node)
         .toggle_select_link(toggle_select_link)
         .links(links)
-        .elem_angle(axis_assign[axis_by_what])
-        .elem_radius(radius_assign[radius_by_what])
+        .elem_angle(axis_assign[config.axis_by_what])
+        .elem_radius(radius_assign[config.radius_by_what])
         .elem_color(
             function(d, i, islink) {
                 if (islink) d = nodes[d.source];
-                return !islink ? color(d.a) : d.max_deg ? color(d.a) : "#444";
+                return !islink ? color(d.a) : d['max_' + config.axis_by_what] ? color(d.a) : "#aaa";
         });
     // DRAW IT
     var g = hive_plot();
@@ -118,7 +128,7 @@ function draw_hp_force(nodes, links) {
         .attr("y", function (d) { return hive_plot.outerRadius() * Math.sin(d3.mean(d)); })
         .attr("text-anchor", "middle")
         .style("font-weight", "bold")
-        .text( axis_text[axis_by_what] );
+        .text( axis_text[config.axis_by_what] );
 
 
 
@@ -181,15 +191,15 @@ function draw_force_directed(nodes, links) {
     var force = d3.layout.force()
         .nodes(d3.values(nodes))
         .links(links_force)
-        .size([width/2, height/2])
+        .size([width, height])
         .linkDistance(60)
         .charge(-300)
         .on("tick", tick)
         .start();
 
     var svg_force = d3.select("div#vis").append("svg")
-        .attr("width", width/2)
-        .attr("height", height/2)
+        .attr("width", width)
+        .attr("height", height)
         .attr("class", "vis_force")
 
     // Per-type markers, as they don't inherit styles.
@@ -197,15 +207,15 @@ function draw_force_directed(nodes, links) {
         .data(color.range().concat(["#444"]))
       .enter().append("marker")
         .attr("id", function(d) { return d; })
-        .attr("viewBox", "0 -5 10 10")
-        .attr("refX", 15)
-        .attr("refY", -1.5)
+        .attr("refX", "7")
+        .attr("refY", "3")
+        .attr("viewBox", "0 0 6 6")
         .attr("markerWidth", 6)
         .attr("markerHeight", 6)
         .attr("orient", "auto")
         .attr("fill", function (d) { return d; })
       .append("path")
-        .attr("d", "M0,-5L10,0L0,5");
+        .attr("d", "M 0,0 L 6,3 L 0,6 z ");
 
     var path = svg_force.append("g").selectAll("path.link")
         .data(force.links())
@@ -231,9 +241,10 @@ function draw_force_directed(nodes, links) {
     svg_force.append("text")
         .attr("fill", "black")
         .attr("y", height / 12)
-        .attr("x", width / 12)
+        .attr("x", width / 4)
         .attr("font-size", "0.8em")
         .attr("font-style", "italic")
+        .attr("font-weight", "bold")
         .attr("text-anchor", "middle")
         .text("node.b ↔ node area");
 

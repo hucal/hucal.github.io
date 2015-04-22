@@ -11,33 +11,97 @@
 
         <link rel="stylesheet" href="../css/normalize.css">
         <link rel="stylesheet" href="../css/main.css">
+        <link rel="stylesheet" href="hp_force.css">
+        <link rel='stylesheet' href='lasso.css'>
+        <link rel='stylesheet' href='trade/style.css'>
         <link rel="stylesheet" href="network.css">
         <script src="../js/vendor/modernizr-2.8.3.min.js"></script>
     </head>
+    <style>
+div#all_vis {
+    padding: 16px;
+    margin: 0 auto;
+}
+div.vis {
+    display:inline-block;
+    margin: 6px;
+}
+    </style>
     <body>
         <!--[if lt IE 8]>
             <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
         <![endif]-->
         <h1>Data: E. Coli Gene Regulation Network</h1>
-        <p>From RegulonDB</p>
-        <p>Node placement along axis: degree</p>
-        <p>Axis categories: in, out, in/out</p>
-        <div id="vis"></div>
+        <div id="all_vis"></div>
+        <div id="elements_info"></div>
 
 <script src="lib/jquery-1.10.2.min.js"></script>
 <script src="lib/colorbrewer.js"></script>
 <script src="lib/d3.v3.min.js"></script>
 <script src="d3.hive.v0.dev.js"></script>
+<script src="lib/D3-Lasso-Plugin/lasso.js"></script>
 <script src="hp.js"></script>
+<script src="trade/trade_vis.js"></script>
 <script>
+var config = {}, data = {};
 
-mk_hp("ecoli.json");
-mk_hp("linux.json");
+function read_data(fname, more) {
+    d3.json(fname, function (error, graph) {
+        if (error) { console.log(error); return; }
 
-function mk_hp(fname) {
-    var width = 770,
-        height = 800;
-    var svg = d3.select("div#vis").append("svg")
+        by_obj_to_ix(graph.nodes, graph.links);
+
+        graph.deg_minmax = find_degree        (graph.nodes, graph.links, true),
+        graph.nn_minmax  = find_next_neighbors(graph.nodes, graph.links),
+        graph.cc_minmax  = find_cc            (graph.nodes, graph.links);
+
+        graph.nodes[graph.deg_minmax.max].max_by_deg = true;
+        graph.nodes[graph.nn_minmax .max].max_by_nn = true;
+        //nodes[graph.cc_minmax .max] .max_by_cc = true;
+        data[fname] = graph;
+        if (more)
+            more();
+    });
+}
+
+read_data("linux.json", function() {
+    mk_hp("linux.json", 0, "red", "lightgrey", "by_deg_directed", "by_deg");
+    mk_hp("linux.json", 1, "red", "lightgrey", "by_deg_thirds" , "by_deg_rel");
+});
+read_data("ecoli.json", function() {
+    mk_hp("ecoli.json", 0, "orange", "lightgrey", "by_deg_directed", "by_deg");
+    mk_hp("ecoli.json", 1, "orange", "lightgrey", "by_deg_thirds" , "by_deg_rel");
+});
+
+
+function mk_hp(fname, id_, col_high, col_low, axis_by, radius_by) {
+    var width = 400,
+        height = 380,
+        graph = data[fname];
+    var fname_id = fname + id_,
+        cfn = config[fname_id];
+    if (cfn === undefined) {
+        config[fname_id] = {redraw:null};
+        cfn = config[fname_id];
+        cfn.axis_by_what = "by_deg";
+        cfn.radius_by_what = "by_deg";
+    }
+    if (!(axis_by === undefined) && !(radius_by === undefined)) {
+        cfn.axis_by_what = axis_by;
+        cfn.radius_by_what = radius_by;
+    }
+
+    if (cfn.container === undefined)
+    cfn.container = d3.select("div#all_vis").append("div")
+            .attr("id", fname_id)
+            .attr("class", "vis");
+
+    cfn.redraw = function () {
+        cfn.container.select("svg").remove();
+        mk_hp(fname, id_, col_high, col_low);
+    }
+
+    var svg = cfn.container.append("svg")
         .attr("width", width)
         .attr("height", height)
         .attr("class", "vis")
@@ -46,78 +110,174 @@ function mk_hp(fname) {
     var hive_plot = mk_hive_plot()
             .svg(svg)
             .innerRadius(20)
-            .outerRadius(340)
+            .outerRadius(width/2 - 40)
             .node_height(2)
             .node_width (6);
-    d3.json(fname, function (error, graph) {
-        if (error) { console.log(error); return; }
 
-        by_obj_to_ix(graph.nodes, graph.links);
+    cfn.angle = d3.scale.ordinal().domain([0,1,2]).rangePoints([4/3 * Math.PI, 0]);
+    cfn.radius = d3.scale.linear().range([hive_plot.innerRadius(), hive_plot.outerRadius()])
+        .clamp(true);
 
-        extrema = find_degree(graph.nodes, graph.links);
-        var min_deg = graph.nodes[extrema[0]],
-            max_deg = graph.nodes[extrema[1]];
+    var as = mk_assigners(graph.nn_minmax, graph.deg_minmax, graph.cc_minmax, cfn.radius, cfn.angle)
+    delete(as.radius_assign["by_b"]);
+    delete(as.axis_assign["by_a"]);
 
-        graph.nodes[extrema[1]].max_targets = true;
 
-        var angle = d3.scale.ordinal().domain(d3.range(0,3))
-                .rangePoints([0, 4/3 * Math.PI]),
-            radius = d3.scale.linear()
-                .range ([hive_plot.innerRadius(), hive_plot.outerRadius()])
-                .domain([min_deg.deg, max_deg.deg]);
-
-        //clone axes
-        var rng = angle.range();
-        rng[0] = [rng[0], rng[0] - Math.PI / 6];
-        rng[2] = [rng[2]];
+    //clone axes
+    var rng = cfn.angle.range();
+    if (cfn.axis_by_what.endsWith("directed")) {
+        rng[2] = [rng[2], rng[2] - Math.PI / 6];
+        rng[0] = [rng[0]];
         rng[1] = [rng[1]];
-        angle.range(rng);
+    }
+    else {
+        rng = rng.map(function(a) {return [a, a-Math.PI/6]})
+    }
+    cfn.angle.range(rng);
 
-        function nada() {return;}
-        var col_high = "red",
-            col_low = "#444";
-        console.log(hive_plot);
-        hive_plot
-            .angle(angle)
-            .radius(radius)
-            .nodes(graph.nodes)
-            .links(graph.links)
-            .elem_radius(function(d) { return radius(d.deg); })
-            .elem_angle(function(d) { return angle(
-                (d.deg_in === 0 && d.deg_out > 0) ? 2 :
-                (d.deg_out === 0 && d.deg_in > 0) ? 1 :
-                0
-                ); })
-            .elem_color(function(d, i, islink) {
-                if (islink) d = graph.nodes[d.source];
-                return !islink ? col_high : d.max_targets ? col_high : col_low;
-            });
-        hive_plot();
+    function nada() {return;}
+    hive_plot
+        .angle(cfn.angle)
+        .radius(cfn.radius)
+        .nodes(graph.nodes)
+        .links(graph.links)
+        .elem_radius(as.radius_assign[cfn.radius_by_what])
+        .elem_angle(as.axis_assign[cfn.axis_by_what])
+        .elem_color(function(d, i, islink) {
+            if (islink) d = graph.nodes[d.source];
+            return !islink ? col_high : d.max_targets ? col_high : col_low;
+        });
+    hive_plot();
+    console.log(as);
 
-        svg.selectAll("circle.grid")
-            .data(radius.ticks(7))
-          .enter().append("g")
-            .attr("class", "grid")
-            .append("circle")
-            .attr("r", function (d) { return radius(d); });
+    svg.append("text")
+        .attr("class", "title")
+        .attr("y", -hive_plot.outerRadius())
+        .text(fname);
 
-        svg.append("text")
-            .attr("class", "title")
-            .attr("y", -hive_plot.outerRadius())
-            .text(fname);
+    svg.selectAll("text.axis-label")
+        .data(cfn.angle.range())
+      .enter().append("text")
+        .attr("class", "axis-label")
+        .attr("x", function (d) { return hive_plot.outerRadius() * Math.cos(d3.mean(d)); })
+        .attr("y", function (d) { return hive_plot.outerRadius() * Math.sin(d3.mean(d)); })
+        .attr("text-anchor", "middle")
+        .style("font-weight", "bold")
+        .text(as.axis_text[cfn.axis_by_what])
 
-        svg.selectAll("text.axis-label")
-            .data(angle.range())
-          .enter().append("text")
-            .attr("class", "axis-label")
-            .attr("x", function (d) { return hive_plot.outerRadius() * Math.cos(d3.mean(d)); })
-            .attr("y", function (d) { return hive_plot.outerRadius() * Math.sin(d3.mean(d)); })
-            .attr("text-anchor", "middle")
-            .style("font-weight", "bold")
-            .text( function(d,i) { return i === 2 ? "regulators"
-                : i == 1 ? "workhorses" : "managers"; } );
-    });
 
+
+    // make lasso
+    var lasso = d3.lasso();
+
+    var lasso_area = svg.append("rect")
+            .attr("x", -width/2)
+            .attr("y", -height/2)
+            .attr("width",width)
+            .attr("height",height)
+            .style("opacity",0);
+    lasso.items(svg.selectAll('rect.node'))
+        .closePathDistance(75)
+        .closePathSelect(true)
+        .hoverSelect(true)
+        .area(lasso_area)
+        .on("start",lasso_start) // lasso start function
+        .on("draw",lasso_draw) // lasso draw function
+        .on("end",lasso_end); // lasso end function
+    svg.call(lasso);
+
+
+
+    // make selectors
+    if (cfn.container.selectAll("table select")[0].length == 0) {
+        var table = cfn.container.append("table").append("tr");
+        var rad = table.append("td")
+            .attr("class", "radius_func");
+        var ax = table.append("td")
+            .attr("class", "axis_func");
+        rad.append("span").text("Radius: ");
+        ax.append("span").text("Axis: ");
+
+        ax.append("td").append("select")
+            .attr("class", "axis_func")
+            .attr("onchange", "config['" + fname_id + "'].axis_by_what=this.value; config['" + fname_id + "'].redraw();")
+            .selectAll("option")
+            .data(obj_keys(as.axis_assign))
+          .enter().append("option")
+            .attr("value", function(i) {return i;})
+            .each(function(d) { if (d === cfn.axis_by_what)
+                    d3.select(this).attr("selected", "selected"); })
+            .text(function(i) {return i.replace(/_/g, " ");});
+
+        rad.append("td").append("select")
+            .attr("onchange", "config['" + fname_id + "'].radius_by_what=this.value; config['" + fname_id + "'].redraw();")
+            .selectAll("option")
+            .data(obj_keys(as.radius_assign))
+          .enter().append("option")
+            .attr("value", function(i) {return i;})
+            .each(function(d) { if (d === cfn.radius_by_what)
+                    d3.select(this).attr("selected", "selected"); })
+            .text(function(i) {return i.replace(/_/g, " ");});
+    }
+
+
+
+
+
+
+    // Lasso functions to execute while lassoing
+    function lasso_start () {
+      lasso.items()
+        .classed({"not_possible":true,"selected":false}); // style as not possible
+    }
+
+    function lasso_draw () {
+        // Style the possible dots
+        lasso.items().filter(function(d) {return d.possible===true})
+            .style("stroke", "green")
+            .style("stroke-width", "3")
+          .classed({"not_possible":false,"possible":true});
+
+        // Style the not possible dot
+        lasso.items().filter(function(d) {return d.possible===false})
+            .style("stroke", "none")
+          .classed({"not_possible":true,"possible":false});
+    };
+
+    function lasso_end() {
+        var selected = [];
+        lasso.items().filter(function(d) {return d.selected===true})
+            .style("stroke", "none")
+          .each(function(d, i){selected.push(d);});
+          selected_elements(selected);
+    }
+}
+
+function selected_elements(elems) {
+    console.log(elems);
+    var ws = d3.select('div#elements_info');
+    var ws_data = ws.selectAll('.element_info')
+        // don't identify data using its list index
+        .data(elems, function(d) { return d.name; });
+
+    ws_data.exit()
+        .style('color', 'white')
+        .transition()
+        .duration(800)
+        .style('height', '12px')
+        .remove();
+
+    var ws_new = ws_data.enter()
+        .insert('div', ':first-child')
+        .attr('class', 'element_info')
+        .style('background', 'black');
+
+   ws_new.transition()
+   .duration(800)
+   .style('background', 'white');
+
+   ws_new.append('h3')
+    .text(function (d) { return d.name; });
 }
 </script>
 </body>

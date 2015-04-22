@@ -1,3 +1,86 @@
+if (typeof String.prototype.endsWith !== 'function') {
+    String.prototype.endsWith = function(suffix) {
+            return this.indexOf(suffix, this.length - suffix.length) !== -1;
+        };
+}
+
+
+
+function mk_assigners(nn_minmax, deg_minmax, cc_minmax, radius, angle) {
+    function mk_rel (which, which_minmax) {
+        return function(d, i) {
+            var q = which_minmax.quantile(d[which]),
+                x1 = Math.round(which_minmax.quantile.invert(q)),
+                x2 = q == 2 ? which_minmax.max_val :
+                     Math.round(which_minmax.quantile.invert(q + 1));
+            return radius((d[which] - x1) / (x2 - x1));
+        }
+    }
+
+    var
+    radius_assign = {
+        by_b: function(d) { return radius(d.b); },
+        by_deg: function(d, i) { return radius(d.deg / deg_minmax.max_val); },
+        by_nn: function(d, i) { return radius(d.nn / nn_minmax.max_val); },
+        by_deg_rel: mk_rel("deg", deg_minmax),
+        by_nn_rel: mk_rel("nn"  , nn_minmax)
+    },
+    axis_assign = {
+        by_deg: function(d, i)
+        { return angle(d.deg > 2 ? 0 : d.deg < 2 ? 1 : 2) },
+        by_deg_thirds: function(d, i)
+        { return angle(deg_minmax.quantile(d.deg)); },
+        by_deg_directed: function(d, i)
+        { return angle(d.deg_in === 0 ? 0 : d.deg_out === 0 ? 1 : 2) },
+        by_nn: function(d, i)
+        { return angle(d.nn > 2 ? 0 : d.nn < 2 ? 1 : 2) },
+        by_nn_thirds: function(d, i)
+        { return angle(nn_minmax.quantile(d.nn)); },
+        by_nn_directed: function(d, i)
+        { return angle(d.nn_in === 0 ? 0 : d.nn_out === 0 ? 1 : 2) },
+        by_a: function(d, i)
+        { return angle(d.a); }
+    },
+    axis_text = {
+        by_deg: function(d, i)
+        { return i === 0 ? "deg > 2" : i === 1 ? "deg < 2" : "deg = 2"; },
+        by_deg_directed: function(d, i)
+        { return i === 0 ? "only out" : i == 1 ? "only in" : "in/out"; },
+        by_deg_thirds: function(d, i)
+        {
+          var m = deg_minmax.max_val,
+              inv = function(x){return Math.ceil(deg_minmax.quantile.invert(x))},
+              end = i == 2 ? "]" : ")";
+          return "deg ∈ [" + inv(i) + "," + (i == 2 ? m : inv(i+1)) + end;},
+        by_nn: function(d, i)
+        { return i === 0 ? "nn > 2" : i === 1 ? "nn < 2" : "nn = 2"; },
+        by_nn_thirds: function(d, i)
+        {
+          var m = nn_minmax.max_val,
+              inv = function(x){return Math.ceil(nn_minmax.quantile.invert(x))},
+              end = i == 2 ? "]" : ")";
+          return "nn ∈ [" + inv(i) + "," + (i == 2 ? m : inv(i+1)) + end;},
+        by_a:  function(d, i)
+        { return "a=" + i; },
+    };
+    axis_text.by_nn_directed    = axis_text.by_deg_directed;
+
+    // sharing :D
+
+    return {radius_assign:radius_assign, axis_assign:axis_assign, axis_text:axis_text};
+}
+
+
+
+
+
+
+
+
+
+
+
+
 /*
    TODO use lasso to select many nodes
 
@@ -93,6 +176,7 @@ function mk_hive_plot() {
             .attr("class", "node_g")
             .each(function(d, i) {
                 var elem = d3.select(this);
+                //console.log(d, elem_angle(d), elem_radius(d));
                 elem_angle(d).forEach(function (angle) {
                     var a = angle - Math.atan(node_width/2 / elem_radius(d));
                     var x = (elem_radius(d)) * Math.cos(a),
@@ -305,11 +389,22 @@ function by_obj_to_ix(nodes, links) {
     });
 }
 
-function find_degree(nodes, links) {
-    nodes.forEach(function(n) { n.deg = 0, n.deg_in = 0, n.deg_out = 0; });
+function find_degree(nodes, links, mk_neighbor_list) {
+    nodes.forEach(function(n) { n.deg = 0, n.deg_in = 0, n.deg_out = 0;
+        if (mk_neighbor_list) {
+            n.neigh_in = [];
+            n.neigh_out = [];
+        }
+    });
     links.forEach(function(l) {
         nodes[l.source].deg_out++;
         nodes[l.target].deg_in++;
+
+        if (mk_neighbor_list) {
+            nodes[l.source].neigh_out.push(l.target);
+            nodes[l.target].neigh_in.push(l.source);
+        }
+
     });
     var min_deg = 0, max_deg = 0;
     nodes.forEach(function(n, i) {
@@ -317,12 +412,73 @@ function find_degree(nodes, links) {
         if (nodes[min_deg].deg > n.deg) min_deg = i;
         if (nodes[max_deg].deg < n.deg) max_deg = i;
     });
-    return [min_deg, max_deg];
+    return {min: min_deg, max: max_deg,
+            min_val: nodes[min_deg].deg, max_val: nodes[max_deg].deg,
+            quantile: d3.scale.linear()
+                .domain(d3.range(0, nodes[max_deg].deg, nodes[max_deg].deg/3))
+                .interpolate(interpolateFloor)
+                .range(d3.range(0,3)).clamp(true) };
 }
 
+function interpolateFloor(a, b) {
+  a = +a, b = +b;
+  return function(t) { return Math.floor(a * (1 - t) + b * t); };
+}
+
+function find_next_neighbors(nodes, links) {
+    if (nodes[0].neigh_in === undefined)
+        find_degree(nodes, links, true);
+    var min_nn = max_nn = 0;
+    nodes.forEach(function(n) {
+        n.nn_in = {};
+        n.nn_out = {};
+        n.neigh_in.forEach(function(neigh_ix) {
+            nodes[neigh_ix].neigh_in
+                .forEach(function(nn_ix)
+                        { n.nn_in[nn_ix] = nn_ix; });
+        });
+        n.neigh_out.forEach(function(neigh_ix) {
+            nodes[neigh_ix].neigh_out // Correct?
+                .forEach(function(nn_ix) { n.nn_out[nn_ix] = nn_ix; });
+        });
+        n.nn_in  = obj_keys(n.nn_in).map(function(ix){return +ix;})
+        n.nn_out = obj_keys(n.nn_out).map(function(ix){return +ix;})
+
+
+        n.nn = n.nn_in.length + n.nn_out.length;
+    });
+    nodes.forEach(function(n, i) {
+        if (nodes[max_nn].nn < n.nn) max_nn = i;
+        if (nodes[min_nn].nn > n.nn) min_nn = i;
+    });
+    return {min: min_nn, max: max_nn,
+            min_val: nodes[min_nn].nn, max_val: nodes[max_nn].nn,
+            quantile: d3.scale.linear()
+                .domain(d3.range(0, nodes[max_nn].nn, nodes[max_nn].nn/3))
+                .interpolate(interpolateFloor)
+                .range(d3.range(0,3)).clamp(true) };
+}
+
+function find_cc(nodes, links) {
+    return [0,0];
+}
 
 
 
 function degrees(radians) {
     return radians / Math.PI * 180;
 }
+
+
+
+function obj_keys(obj) {
+    keys = [];
+    for (var i in obj)
+        if (obj.hasOwnProperty(i))
+            keys.push(i);
+    return keys;
+}
+
+
+
+

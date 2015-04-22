@@ -482,17 +482,22 @@ function hp_vis(root, dm, width, height) {
             .node_height(6)
             .node_width (6);
 
-    var ex = find_degree(graph.nodes, graph.links);
-    var min_deg = graph.nodes[ex[0]],
-        max_deg = graph.nodes[ex[1]];
 
-    graph.nodes[ex[1]].max_targets = true;
+    ///////////
+    //
+    deg_minmax = find_degree        (graph.nodes, graph.links, true);
+    nn_minmax  = find_next_neighbors(graph.nodes, graph.links);
+    cc_minmax  = find_cc            (graph.nodes, graph.links);
+    graph.nodes[deg_minmax.max].max_by_deg = true;
+    graph.nodes[nn_minmax .max].max_by_nn = true;
+
+
 
     var angle = d3.scale.ordinal().domain(d3.range(0,3))
             .rangePoints([0, 4/3 * Math.PI]),
         radius = d3.scale.linear()
             .range ([hive_plot.innerRadius(), hive_plot.outerRadius()])
-            .domain([min_deg.deg, max_deg.deg]);
+            .domain([deg_minmax.min_val, deg_minmax.max_val]);
 
     //clone axes
     var rng = angle.range();
