@@ -1,5 +1,5 @@
 config = {}
-config.nodes = 25;
+config.nodes = 33;
 config.links = 100;
 config.draw_nodes = true;
 config.draw_force = true;
@@ -67,10 +67,12 @@ function draw_hp_force(nodes, links) {
 
 
     // prepare SVG document
-    var svg = d3.select("div#vis").append("svg")
+    var svg = d3.select("div#vis").append("div")
+        .attr("class", "vis_hp")
+        .append("svg")
         .attr("width", width)
         .attr("height", height)
-        .attr("class", "vis");
+        .attr("class", "vis_hp");
     var hive_g = svg.append("g")
         .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
 
@@ -169,7 +171,7 @@ function draw_hp_force(nodes, links) {
 
 
 
-    result.svg.legend = draw_color_legend("node.a", function(d) {return d;}, color);
+    result.svg.legend = draw_color_legend("node.a", function(d) {return d;}, color, d3.select("div.vis_hp"));
 
     if (config.draw_force)
         result.svg.force = draw_force_directed($.extend(true, [], nodes), $.extend(true, [], links));
@@ -207,7 +209,9 @@ function draw_force_directed(nodes, links) {
         .on("tick", tick)
         .start();
 
-    var svg_force = d3.select("div#vis").append("svg")
+    var svg_force = d3.select("div#vis").append("div")
+        .attr("class", "vis_force")
+        .append("svg")
         .attr("width", force_width)
         .attr("height", force_height)
         .attr("class", "vis_force")

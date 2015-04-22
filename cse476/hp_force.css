@@ -5,6 +5,12 @@
 
 .force_link { stroke-width: 2px; }
 
+#vis {text-align: center}
+#vis div {
+    text-align: center;
+    display: inline-block;
+}
+
 .node {
   stroke-width: 0;
 }

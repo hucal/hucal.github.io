@@ -16,7 +16,52 @@
         <script src="../js/vendor/modernizr-2.8.3.min.js"></script>
         <style>
 body{ max-width: 1200px; }
-#vis, #vis_force{ text-align: center; }
+#vis_hp, #vis_force{ text-align: center; }
+
+
+      /* Customize the navbar links to be fill the entire space of the .navbar */
+      .navbar .navbar-inner {
+        padding: 0;
+      }
+      .navbar .nav {
+        margin: 0;
+        display: table;
+        width: 100%;
+      }
+      .navbar .nav li {
+        display: table-cell;
+        width: 1%;
+        float: none;
+      }
+      .navbar .nav li a {
+        font-weight: bold;
+        text-align: center;
+        border-left: 1px solid rgba(255,255,255,.75);
+        border-right: 1px solid rgba(0,0,0,.1);
+      }
+      .navbar .nav li:first-child a {
+        border-left: 0;
+        border-radius: 3px 0 0 3px;
+      }
+      .navbar .nav li:last-child a {
+        border-right: 0;
+        border-radius: 0 3px 3px 0;
+      }
+
+      .bootstro-nav-wrapper {
+        margin: 10px;
+        margin-bottom: 0;
+      }
+
+      .popover-title
+      {
+      	font-weight:bold;
+      }
+      .popover
+      {
+      	width:400px;
+        background: white;
+      }
         </style>
     </head>
     <body>
@@ -31,10 +76,13 @@ body{ max-width: 1200px; }
         Click nodes and links on either vis.
         Data is randomly generated on page load.
 
-        <p style="text-align:center"><button id="begin_tut">Begin tutorial</button></p>
+        <p style="text-align:center">
+        <button id="begin_tut">Begin tutorial</button>
+        <button id="assignment_tut">Skip to axis and radius assignment</button>
+        </p>
         <div class="hfill"/>
         <br/>
-        <table>
+        <table id="input">
         <tr>
             <td/>
             <td>Nodes: <input id="node_count" type="number" min="0" value="10"> </td>
@@ -51,10 +99,9 @@ body{ max-width: 1200px; }
         </tr>
         </table>
 
-        <div id="node-stats"></div>
-        <div id="vis"></div>
-        <div id="vis_force"></div>
-        <div class="hfill"></div>
+        <div class="bootstro" id="node-stats"></div>
+        <div class="bootstro" id="vis"></div>
+        <div class="hfill"> </div>
         <br/>
         <h2>Data dump</h2>
         <div id="data-dump"></div>
@@ -62,15 +109,22 @@ body{ max-width: 1200px; }
 
 <script src="lib/jquery-1.10.2.min.js"></script>
 <script src="lib/colorbrewer.js"></script>
+
+<script src="lib/bootstro.js/bootstro.js"></script>
+<script src="lib/bootstrap/js/bootstrap.js"></script>
+<link rel="stylesheet" href="lib/bootstro.js/bootstro.css"></link>
+<link rel="stylesheet" href="lib/bootstrap/css/bootstrap.css"></link>
+
 <script src="lib/d3.v3.min.js"></script>
 <script src="d3.hive.v0.dev.js"></script>
 <script src="hp.js"></script>
 <script src="hp_force.js"></script>
 <script>
 // write data statistics
+$(document).ready(function(){
 var vis = draw_hp_force();
 function redraw() {
-    d3.selectAll("div#vis svg").remove();
+    d3.selectAll("div#vis div").remove();
     if (config.nodes != vis.nodes.length || config.links != vis.links.length) {
         $("div#data-dump")
             .text(JSON.stringify({nodes:vis.nodes, links:vis.links}, null, 2));
@@ -128,12 +182,98 @@ d3.select("input#draw_nodes")
 d3.select("input#draw_force")
 .attr("onchange", "config.draw_force=this.checked; redraw(); ")
 
-d3.select("input#draw_links")
+var explain_assign = {
+    by_a : 'A node property unique to this dataset. Can be 0, 1 or 2.',
+    by_b : 'A node property unique to this dataset. Ranges from 0 to 1.',
+    by_deg: 'Node degree. How many connections a node has.',
+    by_deg_directed: '',
+    by_deg_thirds: '',
+    by_deg_rel: 'Same as by deg, but scaled to fit entire axis.',
+    by_nn: "Next-neighbors. How many connections a node's neighbors have.",
+    by_nn_directed: '',
+    by_nn_thirds: '',
+    by_nn_rel: 'Same as by nn, but scaled to fit entire axis.'
+}
+
+var bootstro_items =
+    [ {selector: 'div#data-dump',
+        title: 'Data',
+        content: "Let's analyze this randomly generated data!",
+        step: 0}
+    , {selector: 'div#vis',
+        title: 'Visualizations.',
+        content: 'These are better visualizations of this same data. Click the nodes and links!',
+        placement:'top',
+        step: 1}
+    , {selector: 'div.vis_force',
+        title: 'Directed Force Layout',
+        placement: 'left',
+        content: 'A straightforward way of showing a network.',
+        step: 2}
+    , {selector: 'div.vis_hp',
+        title: 'Hive Plot',
+        placement: 'right',
+        content: 'Once you get the hang of it, Hive Plots make it easy to analyze and compare networks. This one has six axes, check the axis assignment for more information. Nodes are split into one or two axis each, links are drawn between related nodes.',
+        step: 3}
+    , {selector: 'table#input',
+        title: 'Input',
+        width: '300px',
+        placement: 'bottom',
+        content: 'Adjust the top row to change the data. The bottom row is for changing the displays.',
+        step: 4}
+    , {selector: '#node_count',
+        title: 'Node Count',
+        width: '300px',
+        placement: 'bottom',
+        content: 'Generate new random data by adjusting these counters.',
+        step: 5}
+    , {selector: 'input#draw_nodes',
+        title: 'Speed up display',
+        width: '300px',
+        placement: 'bottom',
+        content: 'by turning off the force directed layout and by not drawing Hive Plot nodes',
+        step: 6}
+    , {selector: 'select#axis_func',
+        title: 'Axis Assignment',
+        html: true,
+        width: '300px',
+        placement: 'bottom',
+        content:
+            obj_keys(axis_assign).map(function(x){
+                return '<em>' + x.replace(/_/g, ' ') + '</em> - ' + explain_assign[x];
+            }).reduce(function(acc, x){
+                return acc + '<p>'+x+'</p>';
+            }, ''),
+        step: 7}
+    , {selector: 'select#radius_func',
+        title: 'Radius Assignment',
+        html: true,
+        width: '300px',
+        placement: 'bottom',
+        content:
+            obj_keys(radius_assign).map(function(x){
+                return '<em>' + x.replace(/_/g, ' ') + '</em> - ' + explain_assign[x];
+            }).reduce(function(acc, x){
+                return acc + '<p>'+x+'</p>';
+            }, ''),
+        step: 8}
+    ];
+
+
+d3.select("button#begin_tut")
+.on("click", function() { bootstro.start('', {
+    items: bootstro_items,
+    stopOnBackdropClick: false
+}) });
+
+d3.select("button#assignment_tut")
+.on("click", function() { bootstro.start('', {items: bootstro_items.slice(-2)}) });
 
 // should update query string
 function update_config(k, new_k) {
     config[k] = new_k;
 }
+});
 </script>
 </body>
 </html>
