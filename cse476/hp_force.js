@@ -3,7 +3,7 @@ config.nodes = 10;
 config.links = 25;
 config.draw_nodes = true;
 config.draw_force = true;
-config.radius_by_what = "by_deg_rel",
+config.radius_by_what = "by_b",
 config.axis_by_what = "by_deg_directed";
 
 
@@ -59,7 +59,7 @@ function mk_tips(svg) {
                     + '</p><p>indeg=' + d.deg_in + ' outdeg=' + d.deg_out + ' in_nn=' + d.nn_in.length + ' out_nn=' + d.nn_out.length + '</p>'
                     )
         })
-    svg.selectAll('.axes, .node')
+    svg.selectAll('.node')
         .on("mouseout", function() {
             tip.hide()
         })
@@ -74,36 +74,25 @@ function draw_hp_force(nodes, links) {
 
     // 0,1,2 -> 3 angles
     angle = d3.scale.ordinal().domain(d3.range(0,3)).rangePoints([0, 4/3 * Math.PI]);
-    var rng = angle.range();
-    if (config.axis_by_what.endsWith("directed")) {
-        rng[2] = [rng[2], rng[2] - Math.PI / 6];
-        rng[0] = [rng[0]];
-        rng[1] = [rng[1]];
-    }
-    else {
-        rng = rng.map(function(a) {return [a, a-Math.PI/6]})
-    }
-    angle.range(rng);
-
     // 0..1 -> radius
     radius = d3.scale.linear().range([hive_plot.innerRadius(), hive_plot.outerRadius()]);
     // 0,1,2 -> 3 colors
     color = d3.scale.ordinal().domain(d3.range(3)).range(colorbrewer.Dark2[4]);
 
 
-    // prepare SVG document
-    var svg = d3.select("div#vis").append("div")
-        .attr("class", "vis_hp")
-        .append("svg")
-        .attr("width", width)
-        .attr("height", height)
-        .attr("class", "vis_hp");
-    var hive_g = svg.append("g")
-        .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+
+    var rng = angle.range();
+    //clone axes
+    get_cloned(config.axis_by_what).cloned
+        .map(function (i) { rng[i] = [rng[i], rng[i] - Math.PI/6]; });
+    get_cloned(config.axis_by_what).not
+        .map(function (i) { rng[i] = [rng[i]]; });
+    angle.range(rng);
 
     // create graph
     var nodes = (nodes !== undefined) ? nodes : random_nodes(config.nodes, config.nodes);
     var links = (links !== undefined) ? links : random_links(nodes, config.links, config.links, randint);
+
 
     // TODO more node classification functions
     // cc, nn, ccnn, degree, user-defined
@@ -121,8 +110,23 @@ function draw_hp_force(nodes, links) {
         radius_assign = as.radius_assign;
 
 
+    // prepare SVG document
+    var svg = d3.select("div#vis").append("div")
+        .attr("class", "vis_hp")
+        .append("svg")
+        .attr("width", width)
+        .attr("height", height)
+        .attr("class", "vis_hp");
+    var hive_g = svg.append("g")
+        .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
 
-
+    // make lasso area
+    var lasso_area = hive_g.append("rect")
+            .attr("x", -width/2)
+            .attr("y", -height/2)
+            .attr("width",width)
+            .attr("height",height)
+            .style("opacity",0);
 
 
 
@@ -133,7 +137,7 @@ function draw_hp_force(nodes, links) {
         .color(color)
         .nodes(nodes)
         .draw_nodes(config.draw_nodes)
-        .toggle_select_node(toggle_select_node)
+        .toggle_select_node(function(){return;})
         .toggle_select_link(toggle_select_link)
         .links(links)
         .elem_angle(axis_assign[config.axis_by_what])
@@ -172,18 +176,15 @@ function draw_hp_force(nodes, links) {
 
 
     //TODO  use quick node size animation to double highlight
-    function toggle_select_node(d, i) {
-        if (d._selected = !d._selected) {
-            console.log(d);
-            d3.selectAll(".node_" + i).style("stroke", "black").style("stroke-width", 6);
-        }
-        else
-            d3.selectAll(".node_" + i).style("stroke", "none");
+    function select_node(d, i) {
+        d3.selectAll(".node_" + i).style("stroke", "black").style("stroke-width", 6);
+    }
+    function unselect_node(d, i) {
+        d3.selectAll(".node_" + i).style("stroke", "none");
     }
 
     function toggle_select_link(d, i) {
         if (d._selected = !d._selected) {
-            console.log(d, nodes[d.source], nodes[d.target]);
             d3.selectAll(".link_" + i).style("stroke-width", 7);
         }
         else
@@ -193,7 +194,39 @@ function draw_hp_force(nodes, links) {
 
 
 
+    // make lasso
 
+    var lasso = d3.lasso();
+
+    lasso.items(hive_g.selectAll('rect.node'))
+        .closePathDistance(75)
+        .closePathSelect(true)
+        .hoverSelect(true)
+        .area(lasso_area)
+        .on("start",lasso_start) // lasso start function
+        .on("draw",lasso_draw) // lasso draw function
+        .on("end",lasso_end); // lasso end function
+    hive_g.call(lasso);
+
+
+
+    // Lasso functions to execute while lassoing
+    function lasso_start () {
+    }
+
+    function lasso_draw () {
+         lasso.items()
+         .each(function(d,i){
+             if (d.possible)
+                 select_node(d, d.d3_ix);
+             else
+                 unselect_node(d, d.d3_ix);
+         })
+
+    };
+
+    function lasso_end() {
+    }
 
 
     result.svg.legend = draw_color_legend("node.a", function(d) {return d;}, color, d3.select("div.vis_hp"));
@@ -204,22 +237,7 @@ function draw_hp_force(nodes, links) {
     result.nodes = nodes;
     result.links = links;
 
-    result.mk_tut_tips = function() {
-        console.log(mk_tips);
-        var tip = mk_tips(svg);
-        return (function () {
-            svg.selectAll('g.axes.axes2')
-                .on("mouseover", function(d) {
-                    tip.show('Cloned axis')
-                })
-            svg.selectAll('.axes0, .axes1')
-                .on("mouseover", function(d) {
-                    tip.show('Axis')
-                })
-        });
-    }();
-
-
+    mk_tips(svg)
     return result;
 }
 

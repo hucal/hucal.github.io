@@ -14,15 +14,19 @@
         <link rel='stylesheet' href='style.css'>
         <link rel='stylesheet' href='../hp_force.css'>
         <link rel='stylesheet' href='../lasso.css'>
+        <link rel="stylesheet" href="../d3_tips.css">
         <script src='../../js/vendor/modernizr-2.8.3.min.js'></script>
         <style>
         body {
-            width: 900px;
             margin: 0 auto;
         }
 
-        #hp_vis {
-            margin: 0 auto;
+        #all_vis {
+            text-align: center;
+        }
+        #all_vis div {
+            display: inline-block;
+            text-align: center;
         }
 
         .link, g.grid circle{
@@ -40,33 +44,33 @@
         <![endif]-->
 
 
-        <table>
-        <tr>
-            <td><button>add vis</button></td>
-            <td><input type=radio name='flow_type' value='flow1'> imports</td>
-            <td><input type=radio name='flow_type' value='flow2'> exports</td>
-            <td><input type=radio name='flow_type' value='diff21'> exports - imports</td>
-            <td><input type=radio name='flow_type' value='diff12'> imports - exports</td>
-        </tr>
-        </table>
-    <table id='controls'>
+    <div id="all_vis">
+    <div id="hp_vis"> </div>
+    </div>
+    <table id='hp_controls'>
     <tr>
-        <td><button>&lt;&lt;</button></td>
+        <td>
+        <button id='prev_year'>&lt;&lt;</button>
+        <button id='next_year'>&gt;&gt;</button>
+        </td>
         <td><select id='sel_year'></select></td>
-        <td><button>&gt;&gt;</button></td>
+        <td>Axis assignment: <select id="axis_func">
+        </select></td>
+        <td>Radius assignment: <select id="radius_func">
+        </select></td>
     </tr>
     </table>
-        <div id='hp_vis'></div>
-        <div id='elements_info'></div>
-        <header>Hugo Rivera, 2015 <a href=../../index.html>home</a></header>
+    <div id="elements_info"> </div>
+    <header>Hugo Rivera, 2015 <a href=../../index.html>home</a></header>
 
 <!---script src='http://d3js.org/d3.v3.min.js'></script--!>
 <script src='../lib/d3.v3.min.js'></script>
 <script src='../lib/topojson.v1.min.js'></script>
 <script src='../lib/colorbrewer.js'></script>
 <script src='../lib/D3-Lasso-Plugin/lasso.js'></script>
-<script src='../hp.js'></script>
+<script src="../lib/d3-tip.js">   </script>
 <script src='../d3.hive.v0.dev.js'></script>
+<script src='../hp.js'></script>
 <script src='trade_vis.js'></script>
 <script>
 
@@ -83,12 +87,12 @@ if (queryString.year === undefined)
     year_query = '1870';
 
 // TODO MAKE ONE OF THESE FOR EACH VIS
-d3.selectAll('input[name=flow_type]')
-    .attr('onchange',        'console.log(this.value);ggg.current_flow(this.value)')
-d3.select('select#sel_year')
-    .attr('onchange',       'console.log(this.value);ggg.year(this.value)()')
+d3.selectAll('#hp_flow_type input[name=flow_type]')
+    .attr('onchange',        'console.log(this.value);hhh.current_flow(this.value)')
+d3.select('#hp_controls select#sel_year')
+    .attr('onchange',       'console.log(this.value);hhh.year(this.value)()')
     .selectAll('option')
-    .data(d3.range(1870, 2001, 10))
+    .data(d3.range(1870, 2001, 5))
     .enter().append('option')
     .each(function (year) {
         // select current year
@@ -100,11 +104,13 @@ d3.select('select#sel_year')
     .text(function(year) { return year; });
     })
 
-var ggg;
+var hhh;
 
-ggg = hp_vis(d3.select('#hp_vis'), data_man)
+hhh = hp_vis(d3.select('#hp_vis'), data_man)
         .year(year_query);
-ggg();
+hhh();
+
+
 </script>
 </body>
 </html>

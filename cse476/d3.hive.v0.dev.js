@@ -37,6 +37,7 @@ d3.hive.link = function() {
         a = +(typeof angle === "function" ? angle.call(thiz, node, i, d) : angle) + arcOffset,
         r0 = +(typeof startRadius === "function" ? startRadius.call(thiz, node, i, d) : startRadius),
         r1 = (startRadius === endRadius ? r0 : +(typeof endRadius === "function" ? endRadius.call(thiz, node, i, d) : endRadius));
+
     return {r0: r0, r1: r1, a: a};
   }
 

@@ -31,13 +31,13 @@ function mk_assigners(nn_minmax, deg_minmax, cc_minmax, radius, angle) {
         by_deg_thirds: function(d, i)
         { return angle(deg_minmax.quantile(d.deg)); },
         by_deg_directed: function(d, i)
-        { return angle(d.deg_in === 0 ? 0 : d.deg_out === 0 ? 1 : 2) },
+        { return angle(d.deg_in === 0 ? 2 : d.deg_out === 0 ? 1 : 0) },
         by_nn: function(d, i)
         { return angle(d.nn > 2 ? 0 : d.nn < 2 ? 1 : 2) },
         by_nn_thirds: function(d, i)
         { return angle(nn_minmax.quantile(d.nn)); },
         by_nn_directed: function(d, i)
-        { return angle(d.nn_in === 0 ? 0 : d.nn_out === 0 ? 1 : 2) },
+        { return angle(d.nn_in === 0 ? 2 : d.nn_out === 0 ? 1 : 0) },
         by_a: function(d, i)
         { return angle(d.a); }
     },
@@ -67,10 +67,18 @@ function mk_assigners(nn_minmax, deg_minmax, cc_minmax, radius, angle) {
 
     // sharing :D
 
-    return {radius_assign:radius_assign, axis_assign:axis_assign, axis_text:axis_text};
+
+    return {   radius_assign: radius_assign,
+        axis_assign: axis_assign,
+        axis_text: axis_text,
+    }
 }
 
 
+function get_cloned(n) {
+    if (n.endsWith("directed")) return { cloned: [0], not: [1,2] }
+    else return { cloned: [0,1,2], not: [] };
+}
 
 
 
@@ -141,13 +149,16 @@ function mk_hive_plot() {
                .source(function (d) { return nodes[d.source]; })
                .target(function (d) { return nodes[d.target]; })
                .angle(function(d, i, link) {
-                   var is_source = nodes[link.source] === d;
+                   var is_source = nodes[link.source] === d,
                        a = elem_angle(d),
                        b = elem_angle( is_source ? nodes[link.target]
-                                                 : nodes[link.source]);
+                                                 : nodes[link.source]),
+                       r;
                    if (a === b)
-                       return is_source ? a[1] : a[0];
-                   return nearest_angle(a,b);
+                       r = (is_source && a.length > 1) ? a[1] : a[0];
+                   else
+                       r =  nearest_angle(a,b);
+                   return r;
                })
                .radius(function(d) { return elem_radius(d); });
 
@@ -175,6 +186,8 @@ function mk_hive_plot() {
             .append("g")
             .attr("class", "node_g")
             .each(function(d, i) {
+                d.d3_ix = i;
+
                 var elem = d3.select(this);
                 //console.log(d, elem_angle(d), elem_radius(d));
                 elem_angle(d).forEach(function (angle) {

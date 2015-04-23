@@ -33,8 +33,51 @@ var categories = 5,
     };
 
 
+function mk_trade_assigners(nn_minmax, deg_minmax, cc_minmax, radius, angle) {
+    function mk_rel (which, which_minmax) {
+        return function(d, i) {
+            var q = which_minmax.quantile(d[which]),
+                x1 = Math.round(which_minmax.quantile.invert(q)),
+                x2 = q == 2 ? which_minmax.max_val :
+                     Math.round(which_minmax.quantile.invert(q + 1));
+            return radius((d[which] - x1) / (x2 - x1));
+        }
+    }
+
+    var as = mk_assigners(nn_minmax, deg_minmax, cc_minmax, radius, angle);
+    delete as.radius_assign.by_b;
+    delete as.axis_assign.by_a;
+    return as
+}
 
 
+
+
+
+function mk_tips(g, process_data) {
+    // make tooltips
+    var tip = d3.tip()
+      .attr('class', 'd3-tip')
+      .offset([-10, 0])
+      .html(function(d) {return d;});
+    g.call(tip);
+    g.selectAll('.node')
+        .on("mouseover", function(d) {
+            d = process_data(d);
+            tip.show('<p>' +
+                d.name
+                + '</p><p>Flow 1 is  ' +
+                money(d.flow1_total)
+                + '</p><p>Flow 2 is  ' +
+                money(d.flow2_total)
+                + '</p>');
+        })
+    g.selectAll('.node')
+        .on("mouseout", function() {
+            tip.hide()
+        })
+    return tip;
+}
 
 
 /********************************************************** */
@@ -429,12 +472,15 @@ function geo_vis(root, topology, dm, width, height) {
 /********************************************************** TODO HIVE PLOT */
 function hp_vis(root, dm, width, height) {
     var svg, g,
+        assigners,
         data_man = dm,
         root = root,
+        radius_assign = 'by_nn',
+        axis_assign = 'by_deg_directed',
         lasso = d3.lasso(),
         year = '1870';
-    width = width ? width : 700,
-    height = height ? height : 700;
+    width = width ? width : 500,
+    height = height ? height : 500;
 
     vis = function () {
         if (svg !== undefined) svg.remove();
@@ -450,6 +496,12 @@ function hp_vis(root, dm, width, height) {
         return vis;
     }
 
+    vis.assigners = function(_) {
+        if (!arguments.length) return assigners;
+        assigners = _;
+        return vis;
+    }
+
     // change scale, recolor
     vis.current_flow = function(current_flow) {
         extrema.max.year(year);
@@ -461,66 +513,94 @@ function hp_vis(root, dm, width, height) {
         return vis;
     }
 
-    draw = function(graph, by_ccode) {
-        extrema.max.year(year);
-        extrema.min.year(year);
-        svg = root.append('svg')
-            .attr('width', width)
-            .attr('height', height);
+    // change scale, recolor
+    vis.radius_assign = function(_) {
+        if (!arguments.length) return radius_assign;
 
+        if (assigners.radius_assign.hasOwnProperty(radius_assign)) {
+            svg.remove();
+            radius_assign = _;
+            data_man.call_with_data(year, draw);
+        }
+        return vis
+    }
+    // change scale, recolor
+    vis.axis_assign = function(_) {
+        if (!arguments.length) return axis_assign ;
+
+        if (assigners.axis_assign.hasOwnProperty(axis_assign)) {
+            svg.remove();
+            axis_assign = _;
+            data_man.call_with_data(year, draw);
+        }
+        return vis
+    }
+
+
+    draw = function(graph, by_ccode) {
+
+    extrema.max.year(year);
+    extrema.min.year(year);
+    svg = root.append('svg')
+        .attr('width', width)
+        .attr('height', height);
 
 
 
 
     var g = svg.append("g")
         .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+    var lasso_area = g.insert("rect")
+            .attr("x", -width/2)
+            .attr("y", -height/2)
+            .attr("width",width)
+            .attr("height",height)
+                .style("opacity",0);
 
     var hive_plot = mk_hive_plot()
-            .svg(g)
             .innerRadius(20)
             .outerRadius(width/2 - 30)
             .node_height(6)
             .node_width (6);
 
-
-    ///////////
-    //
-    deg_minmax = find_degree        (graph.nodes, graph.links, true);
-    nn_minmax  = find_next_neighbors(graph.nodes, graph.links);
-    cc_minmax  = find_cc            (graph.nodes, graph.links);
-    graph.nodes[deg_minmax.max].max_by_deg = true;
-    graph.nodes[nn_minmax .max].max_by_nn = true;
-
-
-
     var angle = d3.scale.ordinal().domain(d3.range(0,3))
             .rangePoints([0, 4/3 * Math.PI]),
         radius = d3.scale.linear()
-            .range ([hive_plot.innerRadius(), hive_plot.outerRadius()])
-            .domain([deg_minmax.min_val, deg_minmax.max_val]);
+            .range ([hive_plot.innerRadius(), hive_plot.outerRadius()]);
 
-    //clone axes
+
+
+
+    ///////////
+    //
+
+    var minmax = data_man.minmax(year);
+    graph.nodes[minmax.deg.max].max_by_deg = true;
+    graph.nodes[minmax.nn.max].max_by_nn = true;
+
+
     var rng = angle.range();
-    rng[0] = [rng[0], rng[0] - Math.PI / 6];
-    rng[2] = [rng[2]];
-    rng[1] = [rng[1]];
+    //clone axes
+    get_cloned(axis_assign).cloned
+        .map(function (i) { rng[i] = [rng[i], rng[i] - Math.PI/6]; });
+    get_cloned(axis_assign).not
+        .map(function (i) { rng[i] = [rng[i]]; });
     angle.range(rng);
+
+    assigners = mk_trade_assigners(minmax.nn, minmax.deg, minmax.cc, radius, angle);
 
     function nada() {return;}
     var col_high = "red",
         col_low = "#444";
     hive_plot
+        .svg(g)
         .angle(angle)
         .radius(radius)
         .nodes(graph.nodes)
         .links(graph.links)
         .toggle_select_node(toggle_select_node)
-        .elem_radius(function(d) { return radius(d.deg); })
-        .elem_angle(function(d) { return angle(
-            (d.deg_in === 0 && d.deg_out > 0) ? 2 :
-            (d.deg_out === 0 && d.deg_in > 0) ? 1 :
-            0
-            ); })
+        .elem_radius(assigners.radius_assign[radius_assign])
+        .elem_angle(assigners.axis_assign[axis_assign])
         .elem_color(function(d, i, islink) {
             if (islink) d = graph.nodes[d.source];
             return !islink ? col_high : d.max_targets ? col_high : col_low;
@@ -537,8 +617,7 @@ function hp_vis(root, dm, width, height) {
         .attr("y", function (d) { return 1.1 * hive_plot.outerRadius() * Math.sin(d3.mean(d)); })
         .attr("text-anchor", "end")
         .style("font-weight", "bold")
-        .text( function(d,i) { return i === 2 ? "in=0"
-            : i == 1 ? "out=0" : "in/out"; } );
+        .text( assigners.axis_text[axis_assign] )
 
 
 
@@ -546,23 +625,44 @@ function hp_vis(root, dm, width, height) {
 
 
 
+    // make lasso
 
-        // make lasso
-        var lasso_area = g.append("rect")
-                .attr("x", -width/2)
-                .attr("y", -height/2)
-                .attr("width",width)
-                .attr("height",height)
-                .style("opacity",0);
-        lasso.items(g.selectAll('.node'))
-            .closePathDistance(75)
-            .closePathSelect(true)
-            .hoverSelect(true)
-            .area(lasso_area)
-            .on("start",lasso_start) // lasso start function
-            .on("draw",lasso_draw) // lasso draw function
-            .on("end",lasso_end); // lasso end function
-        g.call(lasso);
+    lasso.items(g.selectAll('.node'))
+        .closePathDistance(75)
+        .closePathSelect(true)
+        .hoverSelect(true)
+        .area(lasso_area)
+        .on("start",lasso_start) // lasso start function
+        .on("draw",lasso_draw) // lasso draw function
+        .on("end",lasso_end); // lasso end function
+    g.call(lasso);
+
+
+    mk_tips(g, function(d){return d;})
+
+
+
+    d3.select("#hp_controls select#axis_func")
+        .attr("onchange", "hhh.axis_assign(this.value);")
+        .selectAll("option")
+        .data(obj_keys(assigners.axis_assign))
+      .enter().append("option")
+        .each(function(d) { if (d === undefined)
+            d3.select(this).attr("selected", "selected"); })
+        .attr("value", function(i) {return i;})
+        .text(function(i) {return i.replace(/_/g, " ");});
+
+    d3.select("#hp_controls select#radius_func")
+        .attr("onchange", "hhh.radius_assign(this.value);")
+        .selectAll("option")
+        .data(obj_keys(assigners.radius_assign))
+      .enter().append("option")
+        .each(function(d) { if (d === undefined)
+            d3.select(this).attr("selected", "selected"); })
+        .attr("value", function(i) {return i;})
+        .text(function(i) {return i.replace(/_/g, " ");});
+
+
     }
 
 
@@ -608,7 +708,6 @@ function hp_vis(root, dm, width, height) {
     function toggle_select_node(d, i) {
         if (d.selected) {
             d3.selectAll(".node_" + i).style("stroke", "black").style("stroke-width", 6);
-            console.log(d, i)
         }
         else
             d3.selectAll(".node_" + i).style("stroke", "none");
@@ -629,7 +728,7 @@ function hp_vis(root, dm, width, height) {
 
 
 function mk_data_man () {
-    var jsons = {}, seek_ccode = {}
+    var jsons = {}, seek_ccode = {}, minmax = {},
         to_fname = function (year) { return 'data/' + year + '.json'; };
 
     var man = function () {
@@ -637,6 +736,10 @@ function mk_data_man () {
     }
 
     man.jsons = function(){return jsons;}
+
+    man.minmax = function (year) {
+        return minmax[''+year];
+    }
 
     man.seek_ccode = function (year) {
         return seek_ccode[''+year];
@@ -661,6 +764,11 @@ function mk_data_man () {
         d3.json(to_fname(year), function(error, data) {
             if (error) { console.log(error); return; }
             jsons[year] = data;
+            minmax[year] = {
+                deg: find_degree(data.nodes, data.links, true),
+                nn: find_next_neighbors(data.nodes, data.links),
+                cc: find_cc(data.nodes, data.links)
+            };
 
             var y = extrema.max.year();
             extrema.max.year(year);
@@ -690,6 +798,7 @@ function mk_data_man () {
 
             extrema.max.year(y);
             extrema.min.year(y);
+
         });
         return man;
     }

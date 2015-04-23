@@ -12,6 +12,7 @@
         <link rel="stylesheet" href="../css/normalize.css">
         <link rel="stylesheet" href="../css/main.css">
         <link rel="stylesheet" href="hp_force.css">
+         <link rel='stylesheet' href='lasso.css'>
         <link rel="stylesheet" href="trade/style.css">
         <link rel="stylesheet" href="d3_tips.css">
         <script src="../js/vendor/modernizr-2.8.3.min.js"></script>
@@ -78,7 +79,12 @@ body{ max-width: 1200px; }
         is from <a href="http://bl.ocks.org/mbostock/1153292">one of Mike Bostock's bl.ocks</a>.
         Click nodes and links on either one.
         Data is randomly generated on page load.
+        </p>
 
+
+
+        <p style="text-align:center">
+        <em>Click and draw with the mouse to select nodes; or click on links.</em></p>
         <p style="text-align:center">
         <button id="begin_tut">Begin tutorial</button>
         <button id="assignment_tut">Skip to axis and radius assignment tutorial</button>
@@ -119,6 +125,7 @@ body{ max-width: 1200px; }
 <link rel="stylesheet" href="lib/bootstrap/css/bootstrap.css"></link>
 
 <script src="lib/d3.v3.min.js"></script>
+<script src="lib/D3-Lasso-Plugin/lasso.js"></script>
 <script src="lib/d3-tip.js">   </script>
 <script src="d3.hive.v0.dev.js"></script>
 
@@ -224,7 +231,7 @@ var bootstro_items =
     , {selector: 'div.vis_hp',
         title: 'Hive Plot',
         placement: 'right',
-        content: 'Hive Plots make it easy to analyze and compare large networks.',
+        content: 'Hive Plots make it easy to analyze and compare large networks. Nodes are assigned to an axis and a radius based on their properties. Draw a lasso with your mouse to select nodes.',
         step: 2}
      , {selector: 'table#input',
         title: 'Input',

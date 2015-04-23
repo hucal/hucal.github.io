@@ -43,7 +43,6 @@ body {
 
         <table>
         <tr>
-            <td><button>add vis</button></td>
             <td><input type=radio name='flow_type' value='flow1'> imports</td>
             <td><input type=radio name='flow_type' value='flow2'> exports</td>
             <td><input type=radio name='flow_type' value='diff21'> exports - imports</td>
@@ -52,9 +51,11 @@ body {
         </table>
     <table id='controls'>
     <tr>
-        <td><button>&lt;&lt;</button></td>
+         <td>
+        <button id='prev_year'>&lt;&lt;</button>
+        <button id='next_year'>&gt;&gt;</button>
+        </td>
         <td><select id='sel_year'></select></td>
-        <td><button>&gt;&gt;</button></td>
     </tr>
     </table>
         <div id='geo_vis'></div>
@@ -65,6 +66,7 @@ body {
 <script src='../lib/d3.v3.min.js'></script>
 <script src='../lib/topojson.v1.min.js'></script>
 <script src='../lib/colorbrewer.js'></script>
+<script src='../hp.js'></script>
 <script src='trade_vis.js'></script>
 <script>
 
@@ -86,7 +88,7 @@ d3.selectAll('input[name=flow_type]')
 d3.select('select#sel_year')
     .attr('onchange',       'console.log(this.value);ggg.year(this.value)()')
     .selectAll('option')
-    .data(d3.range(1870, 2001, 10))
+    .data(d3.range(1870, 2001, 5))
     .enter().append('option')
     .each(function (year) {
         // select current year

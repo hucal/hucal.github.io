@@ -13,21 +13,30 @@
         <link rel="stylesheet" href="../css/main.css">
         <script src="../js/vendor/modernizr-2.8.3.min.js"></script>
         <style>
-.hiveplot{
-    background: #30352F url(http://hiveplot.net/gfx/hiveplot-logo.png) no-repeat;
+.trade_vis {
+    width: 80%;
+    max-width: 500px;
+}
+.trade_vis, .trade_vis *, .hiveplot{
+    background: #30352F;
+    color: #eee;
+}
+.hiveplot {
+    text-decoration: none;
+    background-image: url(http://hiveplot.net/gfx/hiveplot-logo.png);
+    background-repeat: no-repeat;
     background-size: 24px;
     padding: 5px;
     padding-left: 25px;
     -webkit-border-radius:  12.5px;
     -moz-border-radius:     12.5px;
     border-radius:          12.5px;
-    color: #eee;
-    text-decoration: none;
 
 }
 body {
     min-width: 400px;
 }
+
         </style>
 
     </head>
@@ -43,11 +52,13 @@ body {
         for a more thorough explanation.
         </p>
 
+        <div class=trade_vis>
         <p><a href="trade/map.html">Trade Visualization (D3 Map)</a></p>
         <p><a href="trade/hp.html">Trade Visualization (Hive Panel)
         </a></p>
         <p><a href="trade/brushed.html">Trade Visualization (Hive Panel and D3 Map)</a>
         </p>
+        </div>
         <p>Very slow: <a href="hp_ecoli_linux.html">Linux Call graph vs E Coli Gene Regulation Network (Hive Panel)
         </a></p>
         <p>See this one for a <a href="hp_force.html">Random Graph Vis (<span class="hiveplot">Hive Plot tutorial</span> with Force Directed Layout)
