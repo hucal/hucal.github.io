@@ -18,7 +18,7 @@ var flow_scale;
 
 // COLOR AND DATA RANGE
 var compact_frm = d3.format('.1s');
-function compact_money(n) { return compact_frm(n * 1E6) + ' USD'};
+function compact_money(n) { return '$' + compact_frm(n * 1E6)};
 
 var frm = d3.format(',.2f')
 function money(n) { return frm(n) + ' million USD'; }
@@ -33,7 +33,7 @@ var categories = 5,
     };
 
 
-function mk_trade_assigners(nn_minmax, deg_minmax, cc_minmax, radius, angle) {
+function mk_trade_assigners(nn_minmax, deg_minmax, cc_minmax, radius, angle, thisYear) {
     function mk_rel (which, which_minmax) {
         return function(d, i) {
             var q = which_minmax.quantile(d[which]),
@@ -47,6 +47,50 @@ function mk_trade_assigners(nn_minmax, deg_minmax, cc_minmax, radius, angle) {
     var as = mk_assigners(nn_minmax, deg_minmax, cc_minmax, radius, angle);
     delete as.radius_assign.by_b;
     delete as.axis_assign.by_a;
+
+    as.radius_assign.by_total_imports= function(d) {
+        var prevYear = extrema.max.year();
+        extrema.max.year(thisYear);
+        extrema.min.year(thisYear);
+        var r = radius(d.flow1_total / (extrema.max() - extrema.min()));
+        extrema.max.year(prevYear);
+        extrema.min.year(prevYear);
+        return r;
+    }
+    as.radius_assign.by_total_exports =function(d) {
+        var prevYear = extrema.max.year();
+        extrema.max.year(thisYear);
+        extrema.min.year(thisYear);
+        var r = radius(d.flow2_total / (extrema.max() - extrema.min()));
+        extrema.max.year(prevYear);
+        extrema.min.year(prevYear);
+        return r;
+    }
+    as.radius_assign.by_imports_minus_exports =function(d) {
+        var prevYear = extrema.max.year();
+        var prevFlow = extrema.max.current_flow();
+        extrema.max.year(thisYear);
+        extrema.min.year(thisYear);
+        extrema.min.current_flow('diff12');
+        var r = radius(extrema.min.node_flow({trade_info:d}, '_total') / (extrema.max() - extrema.min()));
+        extrema.max.year(prevYear);
+        extrema.min.year(prevYear);
+        extrema.max.current_flow(prevFlow);
+        return r;
+    }
+    as.radius_assign.by_exports_minus_imports =function(d) {
+        var prevYear = extrema.max.year();
+        var prevFlow = extrema.max.current_flow();
+        extrema.max.year(thisYear);
+        extrema.min.year(thisYear);
+        extrema.min.current_flow('diff21');
+        var r = radius(extrema.min.node_flow({trade_info:d}, '_total') / (extrema.max() - extrema.min()));
+        extrema.max.year(prevYear);
+        extrema.min.year(prevYear);
+        extrema.max.current_flow(prevFlow);
+        return r;
+    }
+
     return as
 }
 
@@ -54,21 +98,24 @@ function mk_trade_assigners(nn_minmax, deg_minmax, cc_minmax, radius, angle) {
 
 
 
-function mk_tips(g, process_data) {
+function mk_tips(g, process_data, selector) {
     // make tooltips
+    if (selector === undefined)
+        selector = '.node';
     var tip = d3.tip()
       .attr('class', 'd3-tip')
+      .direction('e')
       .offset([-10, 0])
       .html(function(d) {return d;});
     g.call(tip);
-    g.selectAll('.node')
+    g.selectAll(selector)
         .on("mouseover", function(d) {
             d = process_data(d);
             tip.show('<p>' +
                 d.name
-                + '</p><p>Flow 1 is  ' +
+                + '</p><p>Imports are  ' +
                 money(d.flow1_total)
-                + '</p><p>Flow 2 is  ' +
+                + '</p><p>Exports are  ' +
                 money(d.flow2_total)
                 + '</p>');
         })
@@ -115,7 +162,7 @@ function selected_elements(elems) {
        ws_new.selectAll('p')
        .data(flows)
        .enter().append('p')
-       .text(function (ft) { return ft[0] + ': ' +
+       .text(function (ft) { return ft[0].replace('flow1', 'imports (flow1)').replace('flow2', 'exports (flow2)') + ': ' +
            ft[1](d.flow1_total, d.flow2_total); })
    });
 
@@ -123,39 +170,6 @@ function selected_elements(elems) {
 }
 
 
-
-
-
-
-
-
-
-
-
-function draw_palette(g, height, width) {
-    // color palette
-    var rsize = 80;
-    var palette_elems = g.selectAll('.palette-element')
-        .data(color[extrema.max.color_type()].range()).enter()
-        .append('g')
-        .attr('transform', function(d, i) { return 'translate(' +
-            (200 + i * (rsize + 5)) + ',' + (height - 4 * rsize) + ')'; })
-        .attr('class', 'palette-element')
-
-    palette_elems
-        .append('rect')
-        .style('fill', function (d) { return d; })
-        .attr('width', rsize).attr('height', rsize / 5);
-
-    palette_elems
-        .append('text')
-        .attr('y', -10)
-        .attr('x', rsize/2)
-        .text(function(d, i) {
-            // min is lowest, not 0
-            return compact_money(flow_scale.invert(i === 0 ? min : i));
-        });
-}
 
 
 
@@ -188,7 +202,7 @@ function extrema_reflow() {
         .domain(d3.range(extrema.min(), extrema.max(),
                 Math.abs(extrema.max() - extrema.min()) / (categories + 1)
                 ))
-        .range(d3.range(categories + 1))
+        .rangeRound(d3.range(categories + 1))
         .clamp(true)
         ;
 }
@@ -201,7 +215,7 @@ function basic_stats() {
 
 function extreme_keeper () {
     var flows = {},
-        current_flow = 'diff12rel',
+        current_flow = 'diff12',
         global_min = basic_stats(),
         year = '1950'
         flow_types = {
@@ -268,17 +282,18 @@ function extreme_keeper () {
 /********************************************************** YEAR SWITCHER */
 
 /********************************************************** GEO VIS */
+var focus_code = undefined;
 function geo_vis(root, topology, dm, width, height) {
     var path, svg, g, projection,
         data_man = dm,
         topology = topology,
         year = '1870';
     ////wtf....
-        width = width ? width : 800,
-        height = height ? height : 500,
-        focus_code = undefined,
+        width = width ? width : 700,
+        height = height ? height : 400,
+        //////////////focus_code = undefined,
         zoom = d3.behavior.zoom()
-            .scaleExtent([1, 10])
+            .scaleExtent([0.9, 10])
             .on("zoom", move);
 
         projection = d3.geo.conicEqualArea()
@@ -289,7 +304,6 @@ function geo_vis(root, topology, dm, width, height) {
 
     var draw;
     geo = function() {
-        if (svg !== undefined) svg.remove();
         data_man.call_with_data(year, draw);
         return geo;
     }
@@ -310,6 +324,7 @@ function geo_vis(root, topology, dm, width, height) {
         extrema.min.current_flow(current_flow);
         extrema.max.current_flow(current_flow);
         extrema_reflow();
+
         g.selectAll('.feature')
             .style('fill', focus_code ? get_highlight_fill
                                       : get_neutral_fill);
@@ -317,6 +332,9 @@ function geo_vis(root, topology, dm, width, height) {
     }
 
     draw = function(trade_data, by_ccode) {
+        root.selectAll('svg').remove();
+            d3.selectAll('div.d3-tip.n').remove();
+
         extrema.max.year(year);
         extrema.min.year(year);
 
@@ -373,10 +391,6 @@ function geo_vis(root, topology, dm, width, height) {
                 .style('fill', focus_code ? get_highlight_fill :
                                             get_neutral_fill);
         })
-        .append('svg:title')
-        .text(function (d) {
-            return d.properties.ISONAME + ', capital: ' + d.properties.CAPNAME;
-        });
 
         // match each trade record with corresponding country element
         g.selectAll('g.country')
@@ -398,7 +412,7 @@ function geo_vis(root, topology, dm, width, height) {
         });
 
 
-        function toggle_trade_info(d) {
+        function toggle_trade_info(d, i) {
             d3.select(this).each(function (_) {
                 if (focus_code === d.properties.COWCODE) {
                     // clear effects of highlighting
@@ -435,7 +449,18 @@ function geo_vis(root, topology, dm, width, height) {
                 });
             })
             ;
+            select_node(d, i);
         }
+
+
+        mk_tips(g, function(d){return d.trade_info;},'.feature')
+
+        // add color legend
+        var col = color[extrema.max.color_type()];
+        console.log(col);
+        draw_color_legend("Color scheme", function (d) {
+                return compact_money(flow_scale.invert(d))
+        }, col, root, 30);
         return geo;
     }
 
@@ -479,11 +504,10 @@ function hp_vis(root, dm, width, height) {
         axis_assign = 'by_deg_directed',
         lasso = d3.lasso(),
         year = '1870';
-    width = width ? width : 500,
-    height = height ? height : 500;
+    width = width ? width : 400,
+    height = height ? height : 400;
 
     vis = function () {
-        if (svg !== undefined) svg.remove();
         data_man.call_with_data(year, draw);
         return vis;
     }
@@ -518,7 +542,6 @@ function hp_vis(root, dm, width, height) {
         if (!arguments.length) return radius_assign;
 
         if (assigners.radius_assign.hasOwnProperty(radius_assign)) {
-            svg.remove();
             radius_assign = _;
             data_man.call_with_data(year, draw);
         }
@@ -529,7 +552,6 @@ function hp_vis(root, dm, width, height) {
         if (!arguments.length) return axis_assign ;
 
         if (assigners.axis_assign.hasOwnProperty(axis_assign)) {
-            svg.remove();
             axis_assign = _;
             data_man.call_with_data(year, draw);
         }
@@ -538,6 +560,8 @@ function hp_vis(root, dm, width, height) {
 
 
     draw = function(graph, by_ccode) {
+            root.selectAll('svg').remove();
+            d3.selectAll('div.d3-tip.n').remove();
 
     extrema.max.year(year);
     extrema.min.year(year);
@@ -566,7 +590,8 @@ function hp_vis(root, dm, width, height) {
     var angle = d3.scale.ordinal().domain(d3.range(0,3))
             .rangePoints([0, 4/3 * Math.PI]),
         radius = d3.scale.linear()
-            .range ([hive_plot.innerRadius(), hive_plot.outerRadius()]);
+            .range ([hive_plot.innerRadius(), hive_plot.outerRadius()])
+            .clamp(true);
 
 
 
@@ -587,7 +612,7 @@ function hp_vis(root, dm, width, height) {
         .map(function (i) { rng[i] = [rng[i]]; });
     angle.range(rng);
 
-    assigners = mk_trade_assigners(minmax.nn, minmax.deg, minmax.cc, radius, angle);
+    assigners = mk_trade_assigners(minmax.nn, minmax.deg, minmax.cc, radius, angle, year);
 
     function nada() {return;}
     var col_high = "red",
@@ -598,7 +623,7 @@ function hp_vis(root, dm, width, height) {
         .radius(radius)
         .nodes(graph.nodes)
         .links(graph.links)
-        .toggle_select_node(toggle_select_node)
+        .toggle_select_node(function(){return;})
         .elem_radius(assigners.radius_assign[radius_assign])
         .elem_angle(assigners.axis_assign[axis_assign])
         .elem_color(function(d, i, islink) {
@@ -606,6 +631,11 @@ function hp_vis(root, dm, width, height) {
             return !islink ? col_high : d.max_targets ? col_high : col_low;
         });
     hive_plot();
+
+    g.selectAll('.node')
+        .attr('blegh', function(d,i) {
+            return d3.select(this).attr('class') + ' ccode_' + d.ccode;
+        })
 
 
 
@@ -691,7 +721,7 @@ function hp_vis(root, dm, width, height) {
         var selected = [];
       lasso.items().filter(function(d) {return d.selected===true})
         .classed({"not_possible":false,"possible":false})
-        .each(function(d, i){toggle_select_node(d, i); selected.push(d);});
+        .each(function(d, i){select_node(d, null); selected.push(d);});
 
         selected_elements([]);
         selected_elements(selected);
@@ -699,26 +729,31 @@ function hp_vis(root, dm, width, height) {
       // not selected
       lasso.items().filter(function(d) {return d.selected===false})
         .classed({"not_possible":false,"possible":false})
-        .each(toggle_select_node);
+        .each(unselect_node);
 
     };
 
 
-    //TODO  use quick node size animation to double highlight
-    function toggle_select_node(d, i) {
-        if (d.selected) {
-            d3.selectAll(".node_" + i).style("stroke", "black").style("stroke-width", 6);
-        }
-        else
-            d3.selectAll(".node_" + i).style("stroke", "none");
+    return vis;
+}
+
+
+
+//TODO  use quick node size animation to double highlight
+function select_node(d, i) {
+        d3.selectAll('div#hp_vis').selectAll(".ccode_" + d.ccode).style("stroke", "black").style("stroke-width", 6);
+        d3.selectAll("div#geo_vis").selectAll(".ccode_" + d.ccode)
+                    .style('fill', get_hover_fill)
+    }
+function unselect_node(d, i) {
+        d3.selectAll('div#hp_vis').selectAll(".ccode_" + d.ccode).style("stroke", "none")
+
+        d3.selectAll("div#geo_vis").selectAll(".ccode_" + d.ccode)
+                    .style('fill', function(d,i) { return
+                        focus_code ? ((focus_code == d.ccode) ? get_hover_fill : get_highlight_fill) : get_neutral_fill});
     }
 
 
-
-
-
-    return vis;
-}
 
 
 

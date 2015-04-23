@@ -87,8 +87,6 @@ if (queryString.year === undefined)
     year_query = '1870';
 
 // TODO MAKE ONE OF THESE FOR EACH VIS
-d3.selectAll('#hp_flow_type input[name=flow_type]')
-    .attr('onchange',        'console.log(this.value);hhh.current_flow(this.value)')
 d3.select('#hp_controls select#sel_year')
     .attr('onchange',       'console.log(this.value);hhh.year(this.value)()')
     .selectAll('option')

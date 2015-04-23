@@ -12,27 +12,34 @@
         <link rel='stylesheet' href='../../css/normalize.css'>
         <link rel='stylesheet' href='../../css/main.css'>
 
-        <link rel="stylesheet" href="../d3_tips.css">
         <link rel='stylesheet' href='style.css'>
+        <link rel='stylesheet' href='../hp_force.css'>
+        <link rel='stylesheet' href='../lasso.css'>
+        <link rel="stylesheet" href="../d3_tips.css">
+
         <script src='../../js/vendor/modernizr-2.8.3.min.js'></script>
 <style>
-body {
-    width: 900px;
-    margin: 0 auto;
-}
 
-#geo_vis {
-    margin: 0 auto;
-}
+    .feature {
+      stroke: black;
+      stroke-width: 0.5px;
+    }
 
-.feature {
-  stroke: black;
-  stroke-width: 0.5px;
-}
+    .background {
+        fill: white;
+    }
 
-.background {
-    fill: white;
-}
+    .vis, .vis svg {
+        display: inline-block;
+        text-align: center;
+    }
+
+    .link, g.grid circle{
+        fill: none
+    }
+
+
+    body{text-align:center;}
 </style>
     </head>
     <body>
@@ -41,7 +48,22 @@ body {
         <![endif]-->
 
         <p>Click on the countries to reveal their trade relationships. With no selection, individual trade volume is shown.</p>
+    <div class='vis' id="hp_vis"> </div>
+    <table id='hp_controls'>
+    <tr>
+        <td>
+        <button id='prev_year'>&lt;&lt;</button>
+        <button id='next_year'>&gt;&gt;</button>
+        </td>
+        <td><select id='sel_year'></select></td>
+        <td>Axis assignment: <select id="axis_func">
+        </select></td>
+        <td>Radius assignment: <select id="radius_func">
+        </select></td>
+    </tr>
+    </table>
 
+    <div class='vis' id='geo_vis'></div>
     <table id='map_controls'>
     <tr>
         <td><input type=radio name='flow_type' value='flow1'> imports</td>
@@ -58,7 +80,9 @@ body {
         <td><select id='sel_year'></select></td>
     </tr>
     </table>
-        <div id='geo_vis'></div>
+
+
+
         <div id='elements_info'></div>
         <header>Hugo Rivera, 2015 <a href=../../index.html>home</a></header>
 
@@ -68,7 +92,9 @@ body {
 <script src='../lib/d3-tip.js'></script>
 <script src='../lib/colorbrewer.js'></script>
 <script src='../hp.js'></script>
+<script src='../d3.hive.v0.dev.js'></script>
 <script src='trade_vis.js'></script>
+<script src='../lib/D3-Lasso-Plugin/lasso.js'></script>
 <script>
 
 // switch datasets using query string
@@ -122,6 +148,32 @@ d3.json('data/cshapes_q4.topo.json', function(error, topology) {
         .year(year_query);
     ggg();
 });
+
+
+
+// TODO MAKE ONE OF THESE FOR EACH VIS
+d3.select('#hp_controls select#sel_year')
+    .attr('onchange',       'console.log(this.value);hhh.year(this.value)()')
+    .selectAll('option')
+    .data(d3.range(1870, 2001, 5))
+    .enter().append('option')
+    .each(function (year) {
+        // select current year
+        if (''+year === year_query)
+            d3.select(this).attr('selected', 'selected')
+
+        d3.select(this)
+    .attr('value', function(year) { return year; })
+    .text(function(year) { return year; });
+    })
+
+var hhh;
+
+hhh = hp_vis(d3.select('#hp_vis'), data_man)
+        .year(year_query);
+hhh();
+
+
 </script>
 </body>
 </html>
