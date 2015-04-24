@@ -26,6 +26,8 @@ div.vis {
     display:inline-block;
     margin: 6px;
 }
+
+        .axis{stroke: #222;}
     </style>
     <body>
         <!--[if lt IE 8]>
@@ -65,17 +67,27 @@ function read_data(fname, more) {
     });
 }
 
+col_high = colorbrewer.Reds[4][2];
+col_pers = colorbrewer.Blues[4][3];
+
+
+draw_color_legend('Node colors', function(d, i) {
+    return i === 0 ? 'nonpersistent' : 'persistent'; },
+    d3.scale.ordinal().domain(d3.range(2)).range([col_high, col_pers]),
+    d3.select('div#all_vis'), 48)
+
 read_data("linux.json", function() {
-    mk_hp("linux.json", 0, "red", "lightgrey", "by_deg_directed", "by_deg");
-    mk_hp("linux.json", 1, "red", "lightgrey", "by_deg_thirds" , "by_deg_rel");
+    mk_hp("linux.json", 0, col_high, col_pers, "#555", "by_deg_directed", "by_deg_and_group");
+    mk_hp("linux.json", 1, col_high, col_pers, "#555", "by_deg_thirds" , "by_deg_rel");
 });
+
 read_data("ecoli.json", function() {
-    mk_hp("ecoli.json", 0, "orange", "lightgrey", "by_deg_directed", "by_deg");
-    mk_hp("ecoli.json", 1, "orange", "lightgrey", "by_deg_thirds" , "by_deg_rel");
+    mk_hp("ecoli.json", 0, col_high, col_pers, "#555", "by_deg_directed", "by_deg_and_group");
+    mk_hp("ecoli.json", 1, col_high, col_pers, "#555", "by_deg_thirds" , "by_deg_rel");
 });
 
 
-function mk_hp(fname, id_, col_high, col_low, axis_by, radius_by) {
+function mk_hp(fname, id_, col_high, col_persistent, col_low, axis_by, radius_by) {
     var width = 400,
         height = 380,
         graph = data[fname];
@@ -99,7 +111,7 @@ function mk_hp(fname, id_, col_high, col_low, axis_by, radius_by) {
 
     cfn.redraw = function () {
         cfn.container.select("svg").remove();
-        mk_hp(fname, id_, col_high, col_low);
+        mk_hp(fname, id_, col_high, col_persistent, col_low);
     }
 
     var svg = cfn.container.append("svg")
@@ -113,28 +125,42 @@ function mk_hp(fname, id_, col_high, col_low, axis_by, radius_by) {
             .innerRadius(20)
             .outerRadius(width/2 - 40)
             .node_height(2)
-            .node_width (6);
+            .opacity(0.025)
+            .node_width (9);
 
-    cfn.angle = d3.scale.ordinal().domain([0,1,2]).rangePoints([4/3 * Math.PI, 0]);
+    cfn.angle = d3.scale.ordinal().domain(d3.range(3)).rangePoints([0, 4/3 * Math.PI]);
     cfn.radius = d3.scale.linear().range([hive_plot.innerRadius(), hive_plot.outerRadius()])
         .clamp(true);
 
     var as = mk_assigners(graph.nn_minmax, graph.deg_minmax, graph.cc_minmax, cfn.radius, cfn.angle)
+
     delete(as.radius_assign["by_b"]);
     delete(as.axis_assign["by_a"]);
 
+    // add node grouping functions. segment by label
+    obj_keys(as.radius_assign).map(function(axis) {
+        as.radius_assign[axis + '_and_group'] = function(d,i) {
+            var r = cfn.radius.invert(as.radius_assign[axis](d,i)),
+                perc = 0.25;
 
-    //clone axes
+            if (d.label === "persistent")
+                return cfn.radius((1 - perc) + r * perc);
+            else
+                return cfn.radius(r * (1 - perc - 0.05));
+        }
+
+    })
+
+
     var rng = cfn.angle.range();
-    if (cfn.axis_by_what.endsWith("directed")) {
-        rng[2] = [rng[2], rng[2] - Math.PI / 6];
-        rng[0] = [rng[0]];
-        rng[1] = [rng[1]];
-    }
-    else {
-        rng = rng.map(function(a) {return [a, a-Math.PI/6]})
-    }
+    //clone axes
+    get_cloned(cfn.axis_by_what).cloned
+        .map(function (i) { rng[i] = [rng[i], rng[i] - Math.PI/6]; });
+    get_cloned(cfn.axis_by_what).not
+        .map(function (i) { rng[i] = [rng[i]]; });
     cfn.angle.range(rng);
+
+
 
     function nada() {return;}
     hive_plot
@@ -146,10 +172,10 @@ function mk_hp(fname, id_, col_high, col_low, axis_by, radius_by) {
         .elem_angle(as.axis_assign[cfn.axis_by_what])
         .elem_color(function(d, i, islink) {
             if (islink) d = graph.nodes[d.source];
-            return !islink ? col_high : d.max_targets ? col_high : col_low;
+            var col = d.label === "persistent" ? col_persistent : col_high;
+            return !islink ? col : d.max_targets ? col : col_low;
         });
     hive_plot();
-    console.log(as);
 
     svg.append("text")
         .attr("class", "title")
@@ -271,7 +297,7 @@ function selected_elements(elems) {
     var ws_new = ws_data.enter()
         .insert('div', ':first-child')
         .attr('class', 'element_info')
-        .style('background', 'black');
+        .style('background', '#555');
 
    ws_new.transition()
    .duration(800)
@@ -279,6 +305,8 @@ function selected_elements(elems) {
 
    ws_new.append('h3')
     .text(function (d) { return d.name; });
+   ws_new.append('p')
+    .text(function (d) { return d.label; });
 }
 </script>
 </body>

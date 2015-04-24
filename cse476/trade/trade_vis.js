@@ -135,8 +135,10 @@ function mk_tips(g, process_data, selector, has_hover_fill) {
         })
     g.selectAll(selector)
         .on("mouseout", function(d,i) {
-            if (has_hover_fill)
-            d3.select(this).style('fill', focus_code ? ((focus_code == d.ccode) ? get_hover_fill : get_highlight_fill) : get_neutral_fill);
+            if (has_hover_fill && +focus_code !== +d.properties.COWCODE) {
+                d3.select(this)
+               .style('fill', focus_code ? get_highlight_fill : get_neutral_fill);
+            }
             tip.hide(process_data(d));
         })
     return tip;
@@ -429,12 +431,15 @@ function geo_vis(root, topology, dm, width, height) {
             d3.select(this).each(function (_) {
                 if (focus_code === d.properties.COWCODE) {
                     // clear effects of highlighting
+                    d3.selectAll('.ccode_' + focus_code)
+                        .each(unselect_node);
+
                     focus_code = undefined;
-                    d3.selectAll('.feature')
+                    g.selectAll('.feature')
                         .style('display', 'inline')
                         .style('fill', get_neutral_fill);
                     // keep me highlighted...
-                    d3.selectAll('.ccode_' + d.properties.COWCODE)
+                    g.selectAll('.ccode_' + d.properties.COWCODE)
                         .style('fill', get_hover_fill);
 
                     selected_elements([]);
@@ -443,15 +448,19 @@ function geo_vis(root, topology, dm, width, height) {
                 selected_elements([d.trade_info]);
                 focus_code = d.properties.COWCODE;
 
+
+                d3.selectAll('.ccode_' + focus_code)
+                    .each(select_node);
+
                 // make everything invisible
-                d3.selectAll('.feature')
+                g.selectAll('.feature')
                     .filter(function(e){ return e.properties.COWCODE !== d.properties.COWCODE;})
                     .style('display', 'none')
 
                 // except countries related to this one
                 d.trade_info.links.forEach(function (other) {
                     if (other[extrema.max.current_flow()] < 0) return;
-                    d3.select('.ccode_' + other.ccode2)
+                    g.selectAll('.ccode_' + other.ccode2)
                         .style('display', 'inline')
                         //// HACKY!
                         .filter(function(d) {return d.valid;})
@@ -707,7 +716,7 @@ function hp_vis(root, dm, width, height) {
     hive_plot();
 
     g.selectAll('.node')
-        .attr('blegh', function(d,i) {
+        .attr('class', function(d,i) {
             return d3.select(this).attr('class') + ' ccode_' + d.ccode;
         })
 

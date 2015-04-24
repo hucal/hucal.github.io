@@ -143,10 +143,6 @@ function redraw() {
     } else {
         vis = draw_hp_force(hp_force_vis.nodes, hp_force_vis.links);
     }
-    d3.selectAll('div#node-stats p').remove();
-    d3.select('div#node-stats').append('p')
-    .text('Node count: ' + hp_force_vis.nodes.length +
-          '; link count: ' +  hp_force_vis.links.length);
 }
 
 
@@ -156,11 +152,6 @@ $(document).ready(function(){
 hp_force_vis = draw_hp_force();
 $("div#data-dump")
     .text(JSON.stringify({nodes:hp_force_vis.nodes, links:hp_force_vis.links}, null, 2));
-
-    d3.select('div#node-stats').append('p')
-        .style('text-align', 'center')
-    .text('Node count: ' + hp_force_vis.nodes.length +
-          '; link count: ' +  hp_force_vis.links.length);
 
 function obj_keys(obj) {
     keys = [];

@@ -78,19 +78,20 @@
 
     <div class='vis' id='geo_vis'>
     <table id='map_controls'>
+
     <tr>
-        <td><input type=radio name='flow_type' value='flow1'> imports</td>
-        <td><input type=radio name='flow_type' value='flow2'> exports</td>
-        <td><input type=radio name='flow_type' value='diff21'> exports - imports</td>
-        <td><input type=radio name='flow_type' value='diff12'> imports - exports</td>
-    </tr>
-    <tr>
-        <td/>
+        <td><button id='reset_view'>Reset view</button></td>
         <td>
         <button id='prev_year'>&lt;&lt;</button>
         <button id='next_year'>&gt;&gt;</button>
         </td>
         <td><select id='sel_year'></select></td>
+    </tr>
+    <tr>
+        <td><input type=radio name='flow_type' value='flow1'> imports</td>
+        <td><input type=radio name='flow_type' value='flow2'> exports</td>
+        <td><input type=radio name='flow_type' value='diff21'> surplus </td>
+        <td><input type=radio name='flow_type' value='diff12'> deficit </td>
     </tr>
     </table>
     </div>

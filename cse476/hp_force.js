@@ -26,10 +26,9 @@ location.search.substr(1)
 var width = height = 440,
     hive_plot = mk_hive_plot()
     .innerRadius(20)
-    .outerRadius(width / 2 - 40)
+    .outerRadius(width / 2 - 60)
     .node_height(6)
-    .node_width (9)
-    .opacity(0.5)
+    .node_width (9);
 
 
 
@@ -105,9 +104,29 @@ function draw_hp_force(nodes, links) {
 
 
     var as = mk_assigners(nn_minmax, deg_minmax, cc_minmax, radius, angle);
-        axis_text = as.axis_text,
-        axis_assign = as.axis_assign,
-        radius_assign = as.radius_assign;
+
+    // add node grouping functions. segment by label
+    obj_keys(as.radius_assign).map(function(axis) {
+        as.radius_assign[axis + '_and_by_a'] = function(d,i) {
+            var r = radius.invert(as.radius_assign[axis](d,i)),
+                perc = 0.33;
+
+            if (d.a === 2)
+                return radius((1 - perc) + r * perc);
+            else if (d.a === 1)
+                return radius((1 - 2 * perc) + r * perc);
+            else
+                return radius(r * (1 - 2 * perc));
+        }
+
+    })
+
+    axis_text = as.axis_text,
+    axis_assign = as.axis_assign,
+    radius_assign = as.radius_assign;
+    console.log(as);
+
+
 
 
     // prepare SVG document
@@ -163,8 +182,8 @@ function draw_hp_force(nodes, links) {
         .data(angle.range())
       .enter().append("text")
         .attr("class", "axis_title")
-        .attr("x", function (d) { return hive_plot.outerRadius() * Math.cos(d3.mean(d)); })
-        .attr("y", function (d) { return hive_plot.outerRadius() * Math.sin(d3.mean(d)); })
+        .attr("x", function (d) { return (25 + hive_plot.outerRadius()) * Math.cos(d3.mean(d)); })
+        .attr("y", function (d) { return (25 + hive_plot.outerRadius()) * Math.sin(d3.mean(d)); })
         .attr("text-anchor", "middle")
         .style("font-weight", "bold")
         .text( axis_text[config.axis_by_what] );

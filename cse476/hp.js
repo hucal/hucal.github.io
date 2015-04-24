@@ -45,7 +45,7 @@ function mk_assigners(nn_minmax, deg_minmax, cc_minmax, radius, angle) {
         by_deg: function(d, i)
         { return i === 0 ? "deg > 2" : i === 1 ? "deg < 2" : "deg = 2"; },
         by_deg_directed: function(d, i)
-        { return i === 0 ? "only out" : i == 1 ? "only in" : "in/out"; },
+        { return i === 2 ? "only out" : i == 1 ? "only in" : "in/out"; },
         by_deg_thirds: function(d, i)
         {
           var m = deg_minmax.max_val,
@@ -140,7 +140,6 @@ function mk_hive_plot() {
             .append("line")
             .attr("class", function (d,i) { return "axis axis" + i; })
             .attr("transform", function(d) { return "rotate(" + degrees(d) + ")"; })
-            .attr("stroke", "black")
             .attr("x1", innerRadius)
             .attr("x2", outerRadius);
 

@@ -32,7 +32,15 @@ text.axis-label, text.axis-angle {
     font-size: 0.8em;
     text-anchor: middle;
 }
-text.axis-label {font-weight: bold}
+text.axis-label, text-axis_title {
+    font-weight: bold;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
 
 body {
     min-width: 900px;
