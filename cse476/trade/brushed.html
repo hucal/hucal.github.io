@@ -12,7 +12,6 @@
         <link rel='stylesheet' href='../../css/normalize.css'>
         <link rel='stylesheet' href='../../css/main.css'>
 
-        <link rel='stylesheet' href='style.css'>
         <link rel='stylesheet' href='../hp_force.css'>
         <link rel='stylesheet' href='../lasso.css'>
         <link rel="stylesheet" href="../d3_tips.css">
@@ -38,23 +37,35 @@
         fill: none
     }
 
+    #geo_vis, #hp_vis {outline: 1px solid black; margin: 5px;}
 
     body{text-align:center;}
 </style>
+        <link rel='stylesheet' href='style.css'>
     </head>
     <body>
         <!--[if lt IE 8]>
             <p class='browserupgrade'>You are using an <strong>outdated</strong> browser. Please <a href='http://browsehappy.com/'>upgrade your browser</a> to improve your experience.</p>
         <![endif]-->
 
-        <p>Click on the countries to reveal their trade relationships. With no selection, individual trade volume is shown.</p>
-    <div class='vis' id="hp_vis"> </div>
+    <p>Hover over countries and nodes to show more information</p>
+    <p><em>Click on the countries</em> to reveal their trade relationships. With no selection, individual trade volume is shown.</p>
+    <p><em>Draw a lasso over the nodes</em> on the Hive Plot to select countries.
+    </p>
+
+    <div class='vis' id="hp_vis">
     <table id='hp_controls'>
     <tr>
-        <td>
-        <button id='prev_year'>&lt;&lt;</button>
-        <button id='next_year'>&gt;&gt;</button>
+        <!--button id='prev_year'>&lt;&lt;</button>
+        <button id='next_year'>&gt;&gt;</button--!>
+        <td><button id='reset_view'>Reset view</button></td>
+        <td style='text-align:center;'><input id="panning" type="checkbox">panning? no lasso
         </td>
+
+        <td>
+        Scale: <select id='sel_scale'></select></td>
+        </td>
+        </tr><tr>
         <td><select id='sel_year'></select></td>
         <td>Axis assignment: <select id="axis_func">
         </select></td>
@@ -62,8 +73,10 @@
         </select></td>
     </tr>
     </table>
+    </div>
 
-    <div class='vis' id='geo_vis'></div>
+
+    <div class='vis' id='geo_vis'>
     <table id='map_controls'>
     <tr>
         <td><input type=radio name='flow_type' value='flow1'> imports</td>
@@ -80,6 +93,7 @@
         <td><select id='sel_year'></select></td>
     </tr>
     </table>
+    </div>
 
 
 
@@ -109,10 +123,7 @@ var year_query = queryString.year;
 if (queryString.year === undefined)
     year_query = '1950';
 
-// TODO MAKE ONE OF THESE FOR EACH VIS
-d3.selectAll('#map_controls input[name=flow_type]')
-    .attr('onchange',        'console.log(this.value);ggg.current_flow(this.value)()')
-
+// TODO MAKE INDIVIDUAL CONTROLS FOR EACH VIS
     /*
        this doesn't trigger onchange...
 d3.select('#map_controls button#next_year')

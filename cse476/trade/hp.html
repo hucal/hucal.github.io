@@ -49,10 +49,17 @@
     </div>
     <table id='hp_controls'>
     <tr>
-        <td>
-        <button id='prev_year'>&lt;&lt;</button>
-        <button id='next_year'>&gt;&gt;</button>
+
+        <td><button id='reset_view'>Reset view</button></td>
+        <td style='text-align:center;'><input id="panning" type="checkbox">panning? no lasso
         </td>
+
+        <!--button id='prev_year'>&lt;&lt;</button>
+        <button id='next_year'>&gt;&gt;</button--!>
+
+        <td>Scale: <select id='sel_scale'></select></td>
+
+        </tr><tr>
         <td><select id='sel_year'></select></td>
         <td>Axis assignment: <select id="axis_func">
         </select></td>

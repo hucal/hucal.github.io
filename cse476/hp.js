@@ -287,7 +287,7 @@ function draw_color_legend(title, get_name, color, where, sz) {
 
     var legend = where.append("svg")
         .attr("class", "legends")
-        .attr("width", (sz * 2.5) * Math.max(color.domain().length))
+        .attr("width", (sz * 2) * Math.max(color.domain().length))
         .attr("height", 100);
 
     var g = legend.append("g")
@@ -435,11 +435,6 @@ function find_degree(nodes, links, mk_neighbor_list) {
                 .range(d3.range(0,3)).clamp(true) };
 }
 
-function interpolateFloor(a, b) {
-  a = +a, b = +b;
-  return function(t) { return Math.floor(a * (1 - t) + b * t); };
-}
-
 function find_next_neighbors(nodes, links) {
     if (nodes[0].neigh_in === undefined)
         find_degree(nodes, links, true);
@@ -495,5 +490,10 @@ function obj_keys(obj) {
 }
 
 
+
+function interpolateFloor(a, b) {
+  a = +a, b = +b;
+  return function(t) { return Math.floor(a * (1 - t) + b * t); };
+}
 
 

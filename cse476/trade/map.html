@@ -40,7 +40,7 @@ body {
             <p class='browserupgrade'>You are using an <strong>outdated</strong> browser. Please <a href='http://browsehappy.com/'>upgrade your browser</a> to improve your experience.</p>
         <![endif]-->
 
-        <p>Click on the countries to reveal their trade relationships. With no selection, individual trade volume is shown.</p>
+        <p><em>Click on the countries</em> to reveal their trade relationships. With no selection, individual trade volume is shown.</p>
 
     <table id='map_controls'>
     <tr>
@@ -84,9 +84,6 @@ if (queryString.year === undefined)
     year_query = '1950';
 
 // TODO MAKE ONE OF THESE FOR EACH VIS
-d3.selectAll('#map_controls input[name=flow_type]')
-    .attr('onchange',        'console.log(this.value);ggg.current_flow(this.value)()')
-
     /*
        this doesn't trigger onchange...
 d3.select('#map_controls button#next_year')
