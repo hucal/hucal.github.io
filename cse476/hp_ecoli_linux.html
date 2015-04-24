@@ -70,11 +70,30 @@ function read_data(fname, more) {
 col_high = colorbrewer.Reds[4][2];
 col_pers = colorbrewer.Blues[4][3];
 
+// draw color legend
+var len = 96,
+    leg = d3.select('div#all_vis')
+    .append('svg')
+    .attr('class', 'legends')
+    .attr('width', len * 2)
+    .attr('height', len)
+    .selectAll('g')
+    .data([col_high, col_pers])
+  .enter().append('g')
+    .attr("class", "legend-elem")
+    .attr('transform', function(d,i){ return 'translate(' + i * len + ',10)'});
+leg.append('text')
+    .attr("class", "legend-title")
+    .text(function(d,i) { return (i === 0 ? 'non' : '') + 'persistent'; })
+leg.append('rect')
+    .style('fill', function(d){return d;})
+    .attr('y', 5)
+    .attr('height', 16)
+    .attr('width', len * 0.75)
 
-draw_color_legend('Node colors', function(d, i) {
-    return i === 0 ? 'nonpersistent' : 'persistent'; },
-    d3.scale.ordinal().domain(d3.range(2)).range([col_high, col_pers]),
-    d3.select('div#all_vis'), 48)
+
+
+
 
 read_data("linux.json", function() {
     mk_hp("linux.json", 0, col_high, col_pers, "#555", "by_deg_directed", "by_deg_and_group");
