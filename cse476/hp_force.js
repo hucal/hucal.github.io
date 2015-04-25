@@ -4,7 +4,7 @@ config.links = 25;
 config.draw_nodes = true;
 config.draw_force = true;
 config.radius_by_what = "by_b",
-config.axis_by_what = "by_deg_directed";
+config.axis_by_what = "by_deg_thirds";
 
 
 
@@ -107,7 +107,7 @@ function draw_hp_force(nodes, links) {
 
     // add node grouping functions. segment by label
     obj_keys(as.radius_assign).map(function(axis) {
-        as.radius_assign[axis + '_and_by_a'] = function(d,i) {
+        as.radius_assign[axis + '_and_group_by_a'] = function(d,i) {
             var r = radius.invert(as.radius_assign[axis](d,i)),
                 perc = 0.33;
 

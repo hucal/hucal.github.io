@@ -7,7 +7,7 @@ if (typeof String.prototype.endsWith !== 'function') {
 
 
 function mk_assigners(nn_minmax, deg_minmax, cc_minmax, radius, angle) {
-    function mk_rel (which, which_minmax) {
+    function mk_normalized (which, which_minmax) {
         return function(d, i) {
             var q = which_minmax.quantile(d[which]),
                 x1 = Math.round(which_minmax.quantile.invert(q)),
@@ -20,10 +20,10 @@ function mk_assigners(nn_minmax, deg_minmax, cc_minmax, radius, angle) {
     var
     radius_assign = {
         by_b: function(d) { return radius(d.b); },
+        by_deg_normalized: mk_normalized("deg", deg_minmax),
+        by_nn_normalized: mk_normalized("nn"  , nn_minmax),
         by_deg: function(d, i) { return radius(d.deg / deg_minmax.max_val); },
-        by_nn: function(d, i) { return radius(d.nn / nn_minmax.max_val); },
-        by_deg_rel: mk_rel("deg", deg_minmax),
-        by_nn_rel: mk_rel("nn"  , nn_minmax)
+        by_nn: function(d, i) { return radius(d.nn / nn_minmax.max_val); }
     },
     axis_assign = {
         by_deg: function(d, i)

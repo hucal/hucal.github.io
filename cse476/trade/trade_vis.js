@@ -6,6 +6,10 @@ if (typeof String.prototype.startsWith != 'function') {
   };
 }
 
+var available_years = d3.range(1870, 2001, 5)
+
+var all_hp_vis = [],
+    all_map_vis = [];
 
 // data manager
 var data_man = mk_data_man();
@@ -44,27 +48,85 @@ var extrema_quant_scale = d3.scale.linear()
     .interpolate(interpolateFloor)
     .range(d3.range(0,3)).clamp(true);
 
-var extrema_quantile = function(d, flow, suffix) {
-    if (!arguments.length) flow = extrema.max.current_flow();
-    var prevFlow = extrema.max.current_flow(),
-        a = extrema.min();
-        b = extrema.max();
-    extrema.max.current_flow(flow);
-    extrema.min.current_flow(flow);
-    var r = extrema_quant_scale.domain(d3.range(a, b, (b - a)/3))
-        (extrema.max.node_flow({trade_info:d}, suffix))
-    extrema.max.current_flow(prevFlow);
-    extrema.min.current_flow(prevFlow);
-    return r;
+function add_hp_help(root) {
+
+}
+
+function add_map_help(root) {
+
+}
+
+function mk_hp_html(root, ix) {
+ d3.select(root).append('div')
+     .attr('class', 'vis hp_vis')
+     .attr('id', 'hp_vis' + ix)
+     .html([
+       , "<div    class='controls'>"
+       , "<button class='control' id='reset_view'>Reset view</button>"
+       , "<input  class='control' id='panning' type='checkbox'>Panning enabled"
+       , "<select class='control' id='sel_scale'></select> Scale"
+       , "<select class='control' id='sel_year'></select>"
+       , "<select class='control' id='axis_func'> </select> Axis assignment"
+       , "<select class='control' id='radius_func'></select> Radius assignment"
+       , "</div>"
+     ].join('\n'));
+}
+
+function mk_map_html(root, ix) {
+ d3.select(root).append('div')
+     .attr('class', 'vis geo_vis')
+     .attr('id', 'geo_vis' + ix)
+     .html([
+       , "<div class='controls'>"
+       , "<button class='control' id='reset_view'>Reset view</button>"
+       , "<select class='control' id='sel_year'></select>"
+       , "<input class='control' type=radio name='flow_type' value='flow1'> imports"
+       , "<input class='control' type=radio name='flow_type' value='flow2'> exports"
+       , "<input class='control' type=radio name='flow_type' value='diff21'> surplus"
+       , "<input class='control' type=radio name='flow_type' value='diff12'> deficit"
+       , "</div>"
+     ].join('\n'));
 }
 
 
+function extrema_quantile_set (flow, suffix) {
+    var prevFlow = extrema.max.current_flow();
+    extrema.max.current_flow(flow);
+    extrema.min.current_flow(flow);
+    extrema_reflow();
+    var a = extrema.min(),
+        b = extrema.max(),
+        r = [extrema_quant_scale.domain(d3.range(a, b, (b - a)/3)), a, b];
+    extrema.max.current_flow(prevFlow);
+    extrema.min.current_flow(prevFlow);
+    extrema_reflow();
+    return r;
+}
 
+function extrema_quantile (d, flow, suffix) {
+    return extrema_quantile_set(flow, suffix)[0](
+        extrema.max.node_flow({trade_info:d}, suffix));
+}
 
 function mk_trade_assigners(nn_minmax, deg_minmax, cc_minmax, radius, angle, thisYear) {
     var as = mk_assigners(nn_minmax, deg_minmax, cc_minmax, radius, angle);
     delete as.radius_assign.by_b;
     delete as.axis_assign.by_a;
+
+    ///// LABELS
+    as.axis_text.by_total_imports = mk_axis_label('flow1');
+    as.axis_text.by_total_exports = mk_axis_label('flow2');
+    as.axis_text.by_deficit = mk_axis_label('diff12');
+    as.axis_text.by_surplus = mk_axis_label('diff21');
+
+    function mk_axis_label(which) {
+        return function(d,i) {
+            var s = extrema_quantile_set('flow1', '_total'),
+                a = s[0].domain()[i],
+                b = i == 2 ? s[2] : s[0].domain()[i + 1];
+            return compact_money(a) + ' to ' + compact_money(b);
+        }
+    }
 
     as.axis_assign.by_total_imports = function(d,i)
     { return angle(extrema_quantile(d, 'flow1', '_total')); }
@@ -76,6 +138,7 @@ function mk_trade_assigners(nn_minmax, deg_minmax, cc_minmax, radius, angle, thi
     { return angle(extrema_quantile(d, 'diff21', '_total')); }
 
 
+    //// MAKE RELATIVE
     as.radius_assign.by_total_imports = mk_flow_assign('flow1')
     as.radius_assign.by_total_exports = mk_flow_assign('flow2');
     as.radius_assign.by_deficit = mk_flow_assign('diff12');
@@ -83,16 +146,20 @@ function mk_trade_assigners(nn_minmax, deg_minmax, cc_minmax, radius, angle, thi
 
     function mk_flow_assign(flow) {
             return function(d) {
+                // save extrema state
             var prevYear = extrema.max.year();
             var prevFlow = extrema.max.current_flow();
             extrema.max.year(thisYear);
             extrema.min.year(thisYear);
             extrema.min.current_flow(flow);
+    extrema_reflow();
             var r = radius(extrema.max.node_flow({trade_info:d}, '_total')
                     / (extrema.max() - extrema.min()));
+            // reset extrema. needs refactoring....
             extrema.max.year(prevYear);
             extrema.min.year(prevYear);
             extrema.max.current_flow(prevFlow);
+    extrema_reflow();
             return r;
         }
     }
@@ -128,13 +195,13 @@ function mk_tips(g, process_data, selector, has_hover_fill) {
 
     g.call(tip);
     g.selectAll(selector)
-        .on("mouseover", function(d) {
+        .on('mouseover', function(d) {
             if (has_hover_fill)
                 d3.select(this).style('fill', get_hover_fill)
             tip.show(process_data(d));
         })
     g.selectAll(selector)
-        .on("mouseout", function(d,i) {
+        .on('mouseout', function(d,i) {
             if (has_hover_fill && +focus_code !== +d.properties.COWCODE) {
                 d3.select(this)
                .style('fill', focus_code ? get_highlight_fill : get_neutral_fill);
@@ -300,21 +367,23 @@ function extreme_keeper () {
 
 /********************************************************** GEO VIS */
 var focus_code = undefined,
-    get_hover_fill = 'black';
+    get_hover_fill = 'yellow';
 
-function geo_vis(root, topology, dm, width, height) {
+function geo_vis(topology, dm, width, height) {
     var path, svg, g, projection,
         data_man = dm,
-    tips,
+        index,
+        root,
+        tips,
         topology = topology,
-        year = '1870';
+        year = '2000';
     ////wtf....
         width = width ? width : 600,
         height = height ? height : 333;
         //focus_code = undefined,
         // zoom = d3.behavior.zoom()
         //     .scaleExtent([0.9, 10])
-        //     .on("zoom", move);
+        //     .on('zoom', move);
 
         projection = d3.geo.conicEqualArea()
             .translate([width / 2, height * 0.7]);
@@ -322,9 +391,12 @@ function geo_vis(root, topology, dm, width, height) {
         path = d3.geo.path()
             .projection(projection);
 
-    var draw;
-    geo = function() {
-        data_man.call_with_data(year, draw);
+    var draw, first = true;
+    geo = function(after) {
+        if (first) mk_html_and_controls();
+        first = false;
+        data_man.call_with_data(year, !after ? draw :
+                function(data,ccode){draw(data,ccode);after(data,ccode)});
         return geo;
     }
 
@@ -333,6 +405,9 @@ function geo_vis(root, topology, dm, width, height) {
     geo.year = function (_) {
         if (!arguments.length) return year;
         year = _;
+        extrema.max.year(year);
+        extrema.min.year(year);
+        extrema_reflow();
         return geo;
     }
 
@@ -351,12 +426,45 @@ function geo_vis(root, topology, dm, width, height) {
         return geo;
     }
 
+    var mk_html_and_controls = function() {
+        ix = index = all_map_vis.length;
+        mk_map_html('#map_vis_container', ix);
+
+        d3.select('#geo_vis' + ix + ' .controls select#sel_year')
+            .attr('onchange', 'all_map_vis[' + ix + '].year(this.value)()')
+            .selectAll('option')
+            .data(available_years)
+          .enter().append('option')
+            .each(function (y) {
+                // select current year
+                if (''+y === ''+year)
+                    d3.select(this).attr('selected', 'selected')
+            })
+            .attr('value', function(y) { return y; })
+            .text(function(y) { return y; });
+
+        d3.selectAll('#geo_vis' + ix + ' .controls input[name=flow_type]')
+            .each(function(){
+                e = d3.select(this);
+                if (e.attr('value') === extrema.max.current_flow())
+                    e.attr('checked', 'checked');
+            })
+            .attr('onchange', 'all_map_vis[' + ix + '].current_flow(this.value)()');
+
+        all_map_vis.push(geo);
+        root = d3.select('#map_vis_container #geo_vis' + index);
+        return geo;
+    }
+
+    geo.mk_html_and_controls = mk_html_and_controls ;
+
     draw = function(trade_data, by_ccode) {
         root.selectAll('svg').remove();
             d3.selectAll('div.d3-tip.n').remove();
 
         extrema.max.year(year);
         extrema.min.year(year);
+        extrema_reflow();
 
         svg = root.append('svg')
             .attr('width', width)
@@ -481,24 +589,13 @@ function geo_vis(root, topology, dm, width, height) {
         // add color legend
         var col = color[extrema.max.color_type()];
 
-        draw_color_legend("Color scheme", function (d, i) {
+        draw_color_legend('Color scheme', function (d, i) {
             var r = compact_money(flow_scale.invert(d));
             if (i === categories) r = '>' + r;
             if (i === 0) r = '<' + r;
             return r;
         }, col, root, 30);
 
-
-        // add controls
-        //
-
-        d3.selectAll('#map_controls input[name=flow_type]')
-            .each(function(){
-                e = d3.select(this);
-                if (e.attr('value') === extrema.max.current_flow())
-                    e.attr("checked", "checked");
-            })
-            .attr('onchange', 'ggg.current_flow(this.value)()')
 
         return geo;
     }
@@ -523,7 +620,7 @@ function geo_vis(root, topology, dm, width, height) {
       );
 
       zoom.translate(t);
-      g.attr("transform", "translate(" + t + ")scale(" + s + ")");
+      g.attr('transform', 'translate(' + t + ')scale(' + s + ')');
     }
 
 
@@ -534,24 +631,29 @@ function geo_vis(root, topology, dm, width, height) {
 
 
 /********************************************************** TODO HIVE PLOT */
-function hp_vis(root, dm, width, height) {
+function hp_vis(dm, width, height) {
     var svg, g,
         assigners,
         hive_plot,
         tips,
         data_man = dm,
+            root,
         panning = false,
         root = root,
         scale = 1.0,
         radius_assign = 'by_total_exports',
         axis_assign = 'by_total_imports',
         lasso = d3.lasso(),
-        year = '1870';
+        year = '2000';
     width = width ? width : 400,
     height = height ? height : 400;
 
-    vis = function () {
-        data_man.call_with_data(year, draw);
+    var first = true;
+    vis = function (after) {
+        if (first) mk_html_and_controls();
+        first = false;
+        data_man.call_with_data(year, !after ? draw :
+                function(data,ccode){draw(data,ccode);after(data,ccode)});
         return vis;
     }
 
@@ -560,6 +662,9 @@ function hp_vis(root, dm, width, height) {
     vis.year = function (_) {
         if (!arguments.length) return year;
         year = _;
+        extrema.max.year(year);
+        extrema.min.year(year);
+        extrema_reflow();
         return vis;
     }
 
@@ -572,7 +677,7 @@ function hp_vis(root, dm, width, height) {
     vis.reset_view = function (_) {
         if (svg !== undefined) {
             svg.select('g')
-            .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+            .attr('transform', 'translate(' + width / 2 + ',' + height / 2 + ')');
         }
     }
 
@@ -581,7 +686,7 @@ function hp_vis(root, dm, width, height) {
         scale = _;
         if (svg !== undefined) {
             svg.select('g')
-                .attr("transform", "scale(" + scale + ")" + svg.select('g')
+                .attr('transform', 'scale(' + scale + ')' + svg.select('g')
                         .attr('transform').replace(/scale\(.*\)/g, ''))
                 .selectAll('rect.node')
                 .attr('width', hive_plot.node_width() / scale);
@@ -591,12 +696,6 @@ function hp_vis(root, dm, width, height) {
         return vis;
     }
 
-
-    vis.assigners = function(_) {
-        if (!arguments.length) return assigners;
-        assigners = _;
-        return vis;
-    }
 
     // change scale, recolor
     vis.current_flow = function(current_flow) {
@@ -613,8 +712,8 @@ function hp_vis(root, dm, width, height) {
     vis.radius_assign = function(_) {
         if (!arguments.length) return radius_assign;
 
-        if (assigners.radius_assign.hasOwnProperty(radius_assign)) {
-            radius_assign = _;
+        radius_assign = _;
+        if (!!assigners && assigners.radius_assign.hasOwnProperty(radius_assign)) {
             data_man.call_with_data(year, draw);
         }
         return vis
@@ -623,46 +722,88 @@ function hp_vis(root, dm, width, height) {
     vis.axis_assign = function(_) {
         if (!arguments.length) return axis_assign ;
 
-        if (assigners.axis_assign.hasOwnProperty(axis_assign)) {
-            axis_assign = _;
+        axis_assign = _;
+        if (!!assigners && assigners.axis_assign.hasOwnProperty(axis_assign)) {
             data_man.call_with_data(year, draw);
         }
         return vis
     }
 
+   var mk_html_and_controls = function() {
+        ix = index = all_hp_vis.length;
+        mk_hp_html('#hp_vis_container', ix);
+
+        d3.select('#hp_vis' + index + ' .controls select#sel_year')
+            .attr('onchange', 'all_hp_vis[' + ix + '].year(this.value)()')
+            .selectAll('option')
+            .data(available_years)
+            .enter().append('option')
+            .each(function (y) {
+                // select current year
+                if (''+y === ''+year)
+                    d3.select(this).attr('selected', 'selected')
+            })
+            .attr('value', function(y) { return y; })
+            .text(function(y) { return y; });
+
+        d3.select('#hp_vis' + index + ' .controls input#panning')
+            .attr('onchange', 'all_hp_vis[' + ix + '].panning(this.checked); ')
+
+        d3.select('#hp_vis' + index + ' .controls button#reset_view')
+            .attr('onclick', 'all_hp_vis[' + ix + '].reset_view();');
+
+        d3.select('#hp_vis' + index + ' .controls select#sel_scale')
+            .attr('onchange', 'all_hp_vis[' + ix + '].scale(this.value)')
+            .selectAll('option')
+            .data(d3.range(4.0, 0, -0.5))
+          .enter().append('option')
+            .each(function(d) { if (d === 1.0)
+                d3.select(this).attr('selected', 'selected'); })
+            .attr('value', function(i) {return i;})
+            .text(function(i) {return i;});
+
+        root = d3.select('#hp_vis_container #hp_vis' + index);
+        all_hp_vis.push(vis);
+        return vis;
+    }
+
+    vis.mk_html_and_controls = mk_html_and_controls;
 
     draw = function(graph, by_ccode) {
+        console.log(root, year);
             root.selectAll('svg').remove();
             d3.selectAll('div.d3-tip.n').remove();
 
     extrema.max.year(year);
     extrema.min.year(year);
+        extrema_reflow();
+
     svg = root.append('svg')
         .attr('width', width)
         .attr('height', height);
 
 
-
-
-    var g = svg.append("g")
-        .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+    var g = svg.append('g')
+        .attr('transform', 'translate(' + width / 2 + ',' + height / 2 + ')');
 
     var zoom = d3.behavior.zoom()
         .scaleExtent([1.0,1.0])
         .on('zoom', function() {
             if (!panning) return;
             var t = d3.event.translate;
+            t[0] *= scale;
+            t[1] *= scale;
             g.attr('transform', 'translate(' + t + ')scale(' + scale + ')'
                         )
         })
     g.call(zoom)
 
-    var lasso_area = g.insert("rect")
-            .attr("x", -width/2)
-            .attr("y", -height/2)
-            .attr("width",width)
-            .attr("height",height)
-                .style("opacity",0);
+    var lasso_area = g.insert('rect')
+            .attr('x', -width/2)
+            .attr('y', -height/2)
+            .attr('width',width)
+            .attr('height',height)
+                .style('opacity',0);
 
     hive_plot = mk_hive_plot()
             .innerRadius(20)
@@ -698,8 +839,8 @@ function hp_vis(root, dm, width, height) {
     assigners = mk_trade_assigners(minmax.nn, minmax.deg, minmax.cc, radius, angle, year);
 
     function nada() {return;}
-    var col_high = "red",
-        col_low = "#444";
+    var col_high = 'red',
+        col_low = '#444';
     hive_plot
         .svg(g)
         .angle(angle)
@@ -722,20 +863,38 @@ function hp_vis(root, dm, width, height) {
 
 
 
-    g.selectAll("text.axis-label")
+    g.selectAll('text.axis-label')
         .data(angle.range())
-      .enter().append("text")
-        .attr("class", "axis-label")
-        .attr("x", function (d) { return 1.1 * hive_plot.outerRadius() * Math.cos(d3.mean(d)); })
-        .attr("y", function (d) { return 1.1 * hive_plot.outerRadius() * Math.sin(d3.mean(d)); })
-        .attr("text-anchor", "end")
-        .style("font-weight", "bold")
+      .enter().append('text')
+        .attr('class', 'axis-label')
+        .attr('x', function (d) { return 1.1 * hive_plot.outerRadius() * Math.cos(d3.mean(d)); })
+        .attr('y', function (d) { return 1.1 * hive_plot.outerRadius() * Math.sin(d3.mean(d)); })
+        .attr('text-anchor', 'end')
+        .style('font-weight', 'bold')
         .text( assigners.axis_text[axis_assign] )
 
 
 
+        // more controls, they need access to assigners
+        d3.select('#hp_vis' + index + ' .controls select#axis_func')
+            .attr('onchange', 'all_hp_vis[' + index + '].axis_assign(this.value);')
+            .selectAll('option')
+            .data(obj_keys(assigners.axis_assign))
+          .enter().append('option')
+            .each(function(d) { if (d === axis_assign)
+                d3.select(this).attr('selected', 'selected'); })
+            .attr('value', function(i) {return i;})
+            .text(function(i) {return i.replace(/_/g, ' ');});
 
-
+        d3.select('#hp_vis' + index + ' .controls select#radius_func')
+            .attr('onchange', 'all_hp_vis[' + index + '].radius_assign(this.value);')
+            .selectAll('option')
+            .data(obj_keys(assigners.radius_assign))
+          .enter().append('option')
+            .each(function(d) { if (d === radius_assign)
+                d3.select(this).attr('selected', 'selected'); })
+            .attr('value', function(i) {return i;})
+            .text(function(i) {return i.replace(/_/g, ' ');});
 
 
     // make lasso
@@ -745,50 +904,13 @@ function hp_vis(root, dm, width, height) {
         .closePathSelect(true)
         .hoverSelect(true)
         .area(lasso_area)
-        .on("start",lasso_start) // lasso start function
-        .on("draw",lasso_draw) // lasso draw function
-        .on("end",lasso_end); // lasso end function
+        .on('start',lasso_start) // lasso start function
+        .on('draw',lasso_draw) // lasso draw function
+        .on('end',lasso_end); // lasso end function
     g.call(lasso);
 
     delete tips;
     tips = mk_tips(g, function(d){return d;}, 'rect.node')
-
-    d3.select('#hp_controls input#panning')
-        .attr("onchange", "hhh.panning(this.checked); ")
-
-    d3.select('#hp_controls button#reset_view')
-        .attr('onclick', "hhh.reset_view();");
-
-    d3.select('#hp_controls select#sel_scale')
-        .attr("onchange", "hhh.scale(this.value)")
-        .selectAll("option")
-        .data(d3.range(4.0, 0, -0.5))
-      .enter().append("option")
-        .each(function(d) { if (d === 1.0)
-            d3.select(this).attr("selected", "selected"); })
-        .attr("value", function(i) {return i;})
-        .text(function(i) {return i;});
-
-    d3.select("#hp_controls select#axis_func")
-        .attr("onchange", "hhh.axis_assign(this.value);")
-        .selectAll("option")
-        .data(obj_keys(assigners.axis_assign))
-      .enter().append("option")
-        .each(function(d) { if (d === axis_assign)
-            d3.select(this).attr("selected", "selected"); })
-        .attr("value", function(i) {return i;})
-        .text(function(i) {return i.replace(/_/g, " ");});
-
-    d3.select("#hp_controls select#radius_func")
-        .attr("onchange", "hhh.radius_assign(this.value);")
-        .selectAll("option")
-        .data(obj_keys(assigners.radius_assign))
-      .enter().append("option")
-        .each(function(d) { if (d === radius_assign)
-            d3.select(this).attr("selected", "selected"); })
-        .attr("value", function(i) {return i;})
-        .text(function(i) {return i.replace(/_/g, " ");});
-
 
     }
 
@@ -803,21 +925,21 @@ function hp_vis(root, dm, width, height) {
             d3.selectAll('.lasso').style('display', 'block');
         }
       lasso.items()
-        .classed({"not_possible":true,"selected":false}); // style as not possible
+        .classed({'not_possible':true,'selected':false}); // style as not possible
     };
 
     var lasso_draw = function() {
         if (panning) return;
   // Style the possible dots
   lasso.items().filter(function(d) {return d.possible===true})
-      .style("stroke", "grey")
-      .style("stroke-width", "6")
-    .classed({"not_possible":false,"possible":true});
+      .style('stroke', 'grey')
+      .style('stroke-width', '6')
+    .classed({'not_possible':false,'possible':true});
 
   // Style the not possible dot
   lasso.items().filter(function(d) {return d.possible===false})
-      .style("stroke", "none")
-    .classed({"not_possible":true,"possible":false});
+      .style('stroke', 'none')
+    .classed({'not_possible':true,'possible':false});
     };
 
     var lasso_end = function() {
@@ -825,7 +947,7 @@ function hp_vis(root, dm, width, height) {
       // selected
         var selected = [];
       lasso.items().filter(function(d) {return d.selected===true})
-        .classed({"not_possible":false,"possible":false})
+        .classed({'not_possible':false,'possible':false})
         .each(function(d, i){select_node(d, null); selected.push(d);});
 
       console.log('selected ', selected.length);
@@ -833,11 +955,10 @@ function hp_vis(root, dm, width, height) {
 
       // not selected
       lasso.items().filter(function(d) {return d.selected===false})
-        .classed({"not_possible":false,"possible":false})
+        .classed({'not_possible':false,'possible':false})
         .each(unselect_node);
 
     };
-
 
     return vis;
 }
@@ -846,15 +967,15 @@ function hp_vis(root, dm, width, height) {
 
 //TODO  use quick node size animation to double highlight
 function select_node(d, i) {
-        d3.selectAll('div#hp_vis').selectAll(".ccode_" + d.ccode).style("stroke", "black").style("stroke-width", 6);
+        d3.selectAll('.hp_vis').selectAll('.ccode_' + d.ccode).style('stroke', get_hover_fill).style('stroke-width', 6);
 
-        d3.selectAll("div#geo_vis").selectAll(".ccode_" + d.ccode)
+        d3.selectAll('.geo_vis').selectAll('.ccode_' + d.ccode)
                     .style('fill', get_hover_fill)
     }
 function unselect_node(d, i) {
-        d3.selectAll('div#hp_vis').selectAll(".ccode_" + d.ccode).style("stroke", "none")
+        d3.selectAll('.hp_vis').selectAll('.ccode_' + d.ccode).style('stroke', 'none')
 
-        d3.selectAll("div#geo_vis").selectAll(".ccode_" + d.ccode)
+        d3.selectAll('.geo_vis').selectAll('.ccode_' + d.ccode)
                     .style('fill', function(d,i) { return
                         focus_code ? ((focus_code == d.ccode) ? get_hover_fill : get_highlight_fill) : get_neutral_fill});
     }
@@ -888,7 +1009,7 @@ function mk_data_man () {
 
     man.call_with_data = function (year, f) {
         year = ''+year;
-        if (typeof jsons[year] === "undefined") {
+        if (typeof jsons[year] === 'undefined') {
             download_data(year, f);
         } else {
             f(jsons[year], seek_ccode[year]);
@@ -901,7 +1022,6 @@ function mk_data_man () {
     var download_data = function (year, f) {
         year = ''+year;
 
-        console.log('reading file ' + data_man.to_fname(year));
         d3.json(to_fname(year), function(error, data) {
             if (error) { console.log(error); return; }
             jsons[year] = data;
@@ -946,6 +1066,10 @@ function mk_data_man () {
 
     return man;
 }
+
+
+
+
 
 
 

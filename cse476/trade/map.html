@@ -3,8 +3,7 @@
     <head>
         <meta charset='utf-8'>
         <meta http-equiv='X-UA-Compatible' content='IE=edge'>
-        <title>D3 Map, COW Data</title>
-        <meta name='description' content=''>
+        <title>D3 Map and Hive Panel, Trade Data Visualization</title>
         <meta name='viewport' content='width=device-width, initial-scale=1'>
 
         <link rel='apple-touch-icon' href='../../apple-touch-icon.png'>
@@ -12,115 +11,48 @@
         <link rel='stylesheet' href='../../css/normalize.css'>
         <link rel='stylesheet' href='../../css/main.css'>
 
+        <link rel='stylesheet' href='../hp_force.css'>
+        <link rel='stylesheet' href='../lasso.css'>
         <link rel="stylesheet" href="../d3_tips.css">
+
         <link rel='stylesheet' href='style.css'>
         <script src='../../js/vendor/modernizr-2.8.3.min.js'></script>
-<style>
-body {
-    width: 900px;
-    margin: 0 auto;
-}
-
-#geo_vis {
-    margin: 0 auto;
-}
-
-.feature {
-  stroke: black;
-  stroke-width: 0.5px;
-}
-
-.background {
-    fill: white;
-}
-</style>
     </head>
     <body>
         <!--[if lt IE 8]>
             <p class='browserupgrade'>You are using an <strong>outdated</strong> browser. Please <a href='http://browsehappy.com/'>upgrade your browser</a> to improve your experience.</p>
         <![endif]-->
 
-        <p><em>Click on the countries</em> to reveal their trade relationships. With no selection, individual trade volume is shown.</p>
+    <div id='global_controls'>
+    <input type='checkbox' checked='checked'/> Limit data to top 30?
+    </div>
 
-    <table id='map_controls'>
-    <tr>
-        <td><button id='reset_view'>Reset view</button></td>
-        <td>
-        <button id='prev_year'>&lt;&lt;</button>
-        <button id='next_year'>&gt;&gt;</button>
-        </td>
-        <td><select id='sel_year'></select></td>
-    </tr>
-    <tr>
-        <td><input type=radio name='flow_type' value='flow1'> imports</td>
-        <td><input type=radio name='flow_type' value='flow2'> exports</td>
-        <td><input type=radio name='flow_type' value='diff21'> surplus </td>
-        <td><input type=radio name='flow_type' value='diff12'> deficit </td>
-    </tr>
-    </table>
+    <div id='all_vis'>
+    <div id='map_vis_container'></div>
+    </div>
 
-        <div id='geo_vis'></div>
-        <div id='elements_info'></div>
-        <header>Hugo Rivera, 2015 <a href=../../index.html>home</a></header>
+    <div id='elements_info'></div>
+    <header>Hugo Rivera, 2015 <a href=../../index.html>home</a></header>
 
 <!---script src='http://d3js.org/d3.v3.min.js'></script--!>
-<script src='../lib/d3.v3.min.js'></script>
+<script src='../lib/d3.v3.js'></script>
 <script src='../lib/topojson.v1.min.js'></script>
 <script src='../lib/d3-tip.js'></script>
 <script src='../lib/colorbrewer.js'></script>
 <script src='../hp.js'></script>
+<script src='../d3.hive.v0.dev.js'></script>
+<script src='../lib/D3-Lasso-Plugin/lasso.js'></script>
+
 <script src='trade_vis.js'></script>
 <script>
-
-// switch datasets using query string
-// read query string, from Stackoverflow somewhere...
-var queryString = {};
-location.search.substr(1)
-    .split('&').forEach(function(item)
-            {queryString[item.split('=')[0]] = item.split('=')[1]});
-
-var year_query = queryString.year;
-
-if (queryString.year === undefined)
-    year_query = '1950';
-
-// TODO MAKE ONE OF THESE FOR EACH VIS
-    /*
-       this doesn't trigger onchange...
-d3.select('#map_controls button#next_year')
-    .on('click', function() {
-        d3.select("#map_controls option[selected=selected] + option")
-            .attr("selected", "selected");
-        d3.select("#map_controls option[selected=selected]")
-            .attr("selected", null);
-    });
-    */
-
-d3.select('#map_controls select#sel_year')
-    .attr('onchange',       'console.log(this.value);ggg.year(this.value)()')
-    .selectAll('option')
-    .data(d3.range(1870, 2001, 5))
-    .enter().append('option')
-    .each(function (year) {
-        // select current year
-        if (''+year === year_query)
-            d3.select(this).attr('selected', 'selected')
-
-        d3.select(this)
-    .attr('value', function(year) { return year; })
-    .text(function(year) { return year; });
-    })
-
-var ggg;
 
 d3.json('data/cshapes_q4.topo.json', function(error, topology) {
     if (error) { console.log(error); return; }
 
-    ggg = geo_vis(d3.select('#geo_vis'), topojson.presimplify(topology), data_man)
-        .year(year_query);
-    ggg();
+    geo_vis(topojson.presimplify(topology), data_man)();
 });
+
+
 </script>
 </body>
 </html>
-
