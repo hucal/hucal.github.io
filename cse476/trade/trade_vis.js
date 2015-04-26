@@ -266,7 +266,12 @@ function get_highlight_fill(d, i){
                 extrema.min.node_flow(d)));
 }
 function get_neutral_fill(d, i){
-    if (!d.valid) return 'url(#diagonal_hatch)';
+    if (!d.valid) {
+        d3.select(this)
+            .style('display', 'none');
+        return 'url(#diagonal_hatch)';
+    }
+
     return color[extrema.max.color_type()](flow_scale(
                 extrema.min.node_flow(d, '_total')));
 }
@@ -544,7 +549,7 @@ function geo_vis(topology, dm, width, height) {
 
                     focus_code = undefined;
                     g.selectAll('.feature')
-                        .style('display', 'inline')
+                        .style('display', function(d){return d.valid ? 'inline' : 'none';})
                         .style('fill', get_neutral_fill);
                     // keep me highlighted...
                     g.selectAll('.ccode_' + d.properties.COWCODE)

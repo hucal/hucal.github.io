@@ -159,7 +159,8 @@ function mk_hive_plot() {
                        r =  nearest_angle(a,b);
                    return r;
                })
-               .radius(function(d) { return elem_radius(d); });
+               .radius(function(d)
+                       { return elem_radius(d); });
 
         g.selectAll("path.link")
             .data(links)

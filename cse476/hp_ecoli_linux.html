@@ -97,12 +97,12 @@ leg.append('rect')
 
 read_data("linux.json", function() {
     mk_hp("linux.json", 0, col_high, col_pers, "#555", "by_deg_directed", "by_deg_and_group");
-    mk_hp("linux.json", 1, col_high, col_pers, "#555", "by_deg_thirds" , "by_deg_rel");
+    mk_hp("linux.json", 1, col_high, col_pers, "#555", "by_deg_thirds" , "by_deg_normalized");
 });
 
 read_data("ecoli.json", function() {
     mk_hp("ecoli.json", 0, col_high, col_pers, "#555", "by_deg_directed", "by_deg_and_group");
-    mk_hp("ecoli.json", 1, col_high, col_pers, "#555", "by_deg_thirds" , "by_deg_rel");
+    mk_hp("ecoli.json", 1, col_high, col_pers, "#555", "by_deg_thirds" , "by_deg_normalized");
 });
 
 

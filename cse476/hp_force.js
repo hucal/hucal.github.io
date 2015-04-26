@@ -7,31 +7,12 @@ config.radius_by_what = "by_b",
 config.axis_by_what = "by_deg_thirds";
 
 
-
-
-// read query string, from Stackoverflow somewhere...
-var queryString = {};
-location.search.substr(1)
-    .split("&").forEach(function(item)
-            {queryString[item.split("=")[0]] = item.split("=")[1]});
-
-["nodes", "links"].forEach(function(x) {
-    if (queryString[x] !== undefined) config[x] = +queryString[x];
-});
-["draw_nodes", "draw_force"].forEach(function(x) {
-    if (queryString[x] !== undefined) config[x] = !config[x];
-});
-
-
 var width = height = 440,
     hive_plot = mk_hive_plot()
     .innerRadius(20)
     .outerRadius(width / 2 - 60)
     .node_height(6)
     .node_width (9);
-
-
-
 
 
     var angle, radius, color,
