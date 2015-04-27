@@ -18,14 +18,14 @@
         <script src="../js/vendor/modernizr-2.8.3.min.js"></script>
     </head>
     <style>
-div#all_vis {
-    padding: 16px;
-    margin: 0 auto;
-}
-div.vis {
-    display:inline-block;
-    margin: 6px;
-}
+        div#all_vis {
+            padding: 16px;
+            margin: 0 auto;
+        }
+        div.vis {
+            display:inline-block;
+            margin: 6px;
+        }
 
         .axis{stroke: #222;}
     </style>
@@ -43,6 +43,7 @@ div.vis {
 <script src="lib/d3.v3.min.js"></script>
 <script src="d3.hive.v0.dev.js"></script>
 <script src="lib/D3-Lasso-Plugin/lasso.js"></script>
+<script src="utilities.js"></script>
 <script src="hp.js"></script>
 <script src="trade/trade_vis.js"></script>
 <script>
@@ -92,15 +93,12 @@ leg.append('rect')
     .attr('width', len * 0.75)
 
 
-
-
-
-read_data("linux.json", function() {
+read_data("data/linux.json", function() {
     mk_hp("linux.json", 0, col_high, col_pers, "#555", "by_deg_directed", "by_deg_and_group");
     mk_hp("linux.json", 1, col_high, col_pers, "#555", "by_deg_thirds" , "by_deg_normalized");
 });
 
-read_data("ecoli.json", function() {
+read_data("data/ecoli.json", function() {
     mk_hp("ecoli.json", 0, col_high, col_pers, "#555", "by_deg_directed", "by_deg_and_group");
     mk_hp("ecoli.json", 1, col_high, col_pers, "#555", "by_deg_thirds" , "by_deg_normalized");
 });
@@ -153,9 +151,6 @@ function mk_hp(fname, id_, col_high, col_persistent, col_low, axis_by, radius_by
 
     var as = mk_assigners(graph.nn_minmax, graph.deg_minmax, graph.cc_minmax, cfn.radius, cfn.angle)
 
-    delete(as.radius_assign["by_b"]);
-    delete(as.axis_assign["by_a"]);
-
     // add node grouping functions. segment by label
     obj_keys(as.radius_assign).map(function(axis) {
         as.radius_assign[axis + '_and_group'] = function(d,i) {
@@ -167,9 +162,7 @@ function mk_hp(fname, id_, col_high, col_persistent, col_low, axis_by, radius_by
             else
                 return cfn.radius(r * (1 - perc - 0.05));
         }
-
     })
-
 
     var rng = cfn.angle.range();
     //clone axes
@@ -265,11 +258,6 @@ function mk_hp(fname, id_, col_high, col_persistent, col_low, axis_by, radius_by
                     d3.select(this).attr("selected", "selected"); })
             .text(function(i) {return i.replace(/_/g, " ");});
     }
-
-
-
-
-
 
     // Lasso functions to execute while lassoing
     function lasso_start () {

@@ -85,6 +85,9 @@ function draw_hp_force(nodes, links) {
 
 
     var as = mk_assigners(nn_minmax, deg_minmax, cc_minmax, radius, angle);
+    as.axis_assign.by_a = function(d,i) { return angle(d.a)}
+    as.axis_text.by_a = function(d,i) { return "a=" + i; }
+    as.radius_assign.by_b = function(d,i) { return radius(d.b); }
 
     // add node grouping functions. segment by label
     obj_keys(as.radius_assign).map(function(axis) {
@@ -105,10 +108,6 @@ function draw_hp_force(nodes, links) {
     axis_text = as.axis_text,
     axis_assign = as.axis_assign,
     radius_assign = as.radius_assign;
-    console.log(as);
-
-
-
 
     // prepare SVG document
     var svg = d3.select("div#vis").append("div")
@@ -128,8 +127,6 @@ function draw_hp_force(nodes, links) {
             .attr("height",height)
             .style("opacity",0);
 
-
-
     hive_plot
         .svg(hive_g)
         .angle(angle)
@@ -137,7 +134,6 @@ function draw_hp_force(nodes, links) {
         .color(color)
         .nodes(nodes)
         .draw_nodes(config.draw_nodes)
-        .toggle_select_node(function(){return;})
         .toggle_select_link(toggle_select_link)
         .links(links)
         .elem_angle(axis_assign[config.axis_by_what])
@@ -168,11 +164,6 @@ function draw_hp_force(nodes, links) {
         .attr("text-anchor", "middle")
         .style("font-weight", "bold")
         .text( axis_text[config.axis_by_what] );
-
-
-
-
-
 
 
     //TODO  use quick node size animation to double highlight
@@ -362,15 +353,4 @@ function draw_force_directed(nodes, links) {
 
     return svg_force;
 }
-
-
-
-
-
-
-
-
-
-
-
 
