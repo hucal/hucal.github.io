@@ -16,248 +16,248 @@ var data_man = mk_data_man();
 
 // globals for scaling and the focused node
 var min = 0.0000001,
-    extrema = { min: extreme_keeper(), max: extreme_keeper() };
+        extrema = { min: extreme_keeper(), max: extreme_keeper() };
 
-var flow_scale;
+    var flow_scale;
 
-// COLOR AND DATA RANGE
-var compact_frm = d3.format('.1s');
-function compact_money(n) { return '$' + compact_frm(n * 1E6)};
+    // COLOR AND DATA RANGE
+    var compact_frm = d3.format('.1s');
+    function compact_money(n) { return '$' + compact_frm(n * 1E6)};
 
-var frm = d3.format('.5s')
-function money(n) { return frm(n * 1E6) + ' USD'; }
+    var frm = d3.format('.5s')
+    function money(n) { return frm(n * 1E6) + ' USD'; }
 
-var translate_flow = {
-    flow1 : 'imports',
-    flow2 : 'exports',
-    diff21: 'surplus (exports - imports)',
-    diff12: 'deficit (imports - exports)'}
-
-
-// color management
-var categories = 5,
-    color = {
-    natural: d3.scale.ordinal().domain(d3.range(categories + 1))
-        .range(colorbrewer.YlGnBu[categories + 2].slice(1)),
-    integer: d3.scale.ordinal().domain(d3.range(categories + 1))
-        .range(colorbrewer.RdBu[categories + 1])
-    };
+    var translate_flow = {
+        flow1 : 'imports',
+        flow2 : 'exports',
+        diff21: 'surplus (exports - imports)',
+        diff12: 'deficit (imports - exports)'}
 
 
-var extrema_quant_scale = d3.scale.linear()
-    .interpolate(interpolateFloor)
-    .range(d3.range(0,3)).clamp(true);
-
-function add_hp_help(root) {
-
-}
-
-function add_map_help(root) {
-
-}
-
-function mk_hp_html(root, ix) {
- d3.select(root).append('div')
-     .attr('class', 'vis hp_vis')
-     .attr('id', 'hp_vis' + ix)
-     .html([
-       , "<div    class='controls'>"
-       , "<button class='control' id='reset_view'>Reset view</button>"
-       , "<input  class='control' id='panning' type='checkbox'>Panning enabled"
-       , "<select class='control' id='sel_scale'></select> Scale"
-       , "<select class='control' id='sel_year'></select>"
-       , "<select class='control' id='axis_func'> </select> Axis assignment"
-       , "<select class='control' id='radius_func'></select> Radius assignment"
-       , "</div>"
-     ].join('\n'));
-}
-
-function mk_map_html(root, ix) {
- d3.select(root).append('div')
-     .attr('class', 'vis geo_vis')
-     .attr('id', 'geo_vis' + ix)
-     .html([
-       , "<div class='controls'>"
-       , "<button class='control' id='reset_view'>Reset view</button>"
-       , "<select class='control' id='sel_year'></select>"
-       , "<input class='control' type=radio name='flow_type' value='flow1'> imports"
-       , "<input class='control' type=radio name='flow_type' value='flow2'> exports"
-       , "<input class='control' type=radio name='flow_type' value='diff21'> surplus"
-       , "<input class='control' type=radio name='flow_type' value='diff12'> deficit"
-       , "</div>"
-     ].join('\n'));
-}
+    // color management
+    var categories = 5,
+        color = {
+        natural: d3.scale.ordinal().domain(d3.range(categories + 1))
+            .range(colorbrewer.YlGnBu[categories + 2].slice(1)),
+        integer: d3.scale.ordinal().domain(d3.range(categories + 1))
+            .range(colorbrewer.RdBu[categories + 1])
+        };
 
 
+    var extrema_quant_scale = d3.scale.linear()
+        .interpolate(interpolateFloor)
+        .range(d3.range(0,3)).clamp(true);
 
+    function add_hp_help(root) {
 
-function extrema_quantile_set (flow, suffix) {
-    var prevFlow = extrema.max.current_flow();
-    extrema.max.current_flow(flow);
-    extrema.min.current_flow(flow);
-    extrema_reflow();
-    var a = extrema.min(),
-        b = extrema.max(),
-        r = [extrema_quant_scale.domain(d3.range(a, b, (b - a)/3)), a, b];
-    extrema.max.current_flow(prevFlow);
-    extrema.min.current_flow(prevFlow);
-    extrema_reflow();
-    return r;
-}
-
-function extrema_quantile (d, flow, suffix) {
-    return extrema_quantile_set(flow, suffix)[0](
-        extrema.max.node_flow({trade_info:d}, suffix));
-}
-
-
-function mk_trade_assigners(nn_minmax, deg_minmax, cc_minmax, radius, angle, thisYear) {
-    var as = mk_assigners(nn_minmax, deg_minmax, cc_minmax, radius, angle);
-
-    ///// LABELS
-    as.axis_text.by_total_imports = mk_axis_label('flow1');
-    as.axis_text.by_total_exports = mk_axis_label('flow2');
-    as.axis_text.by_deficit = mk_axis_label('diff12');
-    as.axis_text.by_surplus = mk_axis_label('diff21');
-
-    function mk_axis_label(which) {
-        return function(d,i) {
-            var s = extrema_quantile_set('flow1', '_total'),
-                a = s[0].domain()[i],
-                b = i == 2 ? s[2] : s[0].domain()[i + 1];
-            return compact_money(a) + ' to ' + compact_money(b);
-        }
     }
 
-    as.axis_assign.by_total_imports = function(d,i)
-    { return angle(extrema_quantile(d, 'flow1', '_total')); }
-    as.axis_assign.by_total_exports = function(d,i)
-    { return angle(extrema_quantile(d, 'flow2', '_total')); }
-    as.axis_assign.by_deficit = function(d,i)
-    { return angle(extrema_quantile(d, 'diff12', '_total')); }
-    as.axis_assign.by_surplus = function(d,i)
-    { return angle(extrema_quantile(d, 'diff21', '_total')); }
+    function add_map_help(root) {
 
-
-    //// MAKE RELATIVE
-    as.radius_assign.by_total_imports = mk_flow_assign('flow1')
-    as.radius_assign.by_total_exports = mk_flow_assign('flow2');
-    as.radius_assign.by_deficit = mk_flow_assign('diff12');
-    as.radius_assign.by_surplus = mk_flow_assign('diff21');
-
-    function mk_flow_assign(flow) {
-            return function(d) {
-            var r, q;
-            with_new_extrema(thisYear, flow, function() {
-                q = extrema_quantile(d, flow, '_total');
-                r = extrema.max.node_flow({trade_info:d}, '_total')
-                  / (extrema.max() - extrema.min());
-                r = radius((r - q/3) * 3);
-            });
-            return r;
-        }
     }
 
-    return as
-}
+    function mk_hp_html(root, ix) {
+     d3.select(root).append('div')
+         .attr('class', 'vis hp_vis')
+         .attr('id', 'hp_vis' + ix)
+         .html([
+           , "<div    class='controls'>"
+           , "<button class='control' id='reset_view'>Reset view</button>"
+           , "<input  class='control' id='panning' type='checkbox'>Panning enabled"
+           , "<select class='control' id='sel_scale'></select> Scale"
+           , "<select class='control' id='sel_year'></select>"
+           , "<select class='control' id='axis_func'> </select> Axis assignment"
+           , "<select class='control' id='radius_func'></select> Radius assignment"
+           , "</div>"
+         ].join('\n'));
+    }
 
-function with_new_extrema(thisYear, thisFlow, dothis) {
-    var prevYear = extrema.max.year();
-    var prevFlow = extrema.max.current_flow();
-    extrema.max.year(thisYear);
-    extrema.min.year(thisYear);
-    extrema.min.current_flow(thisFlow);
-    extrema_reflow();
-
-    dothis();
-
-    extrema.max.year(prevYear);
-    extrema.min.year(prevYear);
-    extrema.max.current_flow(prevFlow);
-    extrema_reflow();
-}
-
-
-
-function mk_tips(g, process_data, selector, has_hover_fill) {
-    // rm tooltips
-    g.selectAll('.d3-tip').remove();
-    // make tooltips
-    var tip = d3.tip()
-      .attr('class', 'd3-tip')
-      .direction('e')
-      .offset([-10, 0])
-      .html(function(d) {
-            if (typeof d === 'undefined' || typeof d.name === 'undefined')
-                return '<p>No data for this year</p>'
-            else
-                return '<p>' +
-                d.name
-                + '</p><p>Imports are  ' +
-                money(d.flow1_total)
-                + '</p><p>Exports are  ' +
-                money(d.flow2_total)
-                + '</p>';
-        });
+    function mk_map_html(root, ix) {
+     d3.select(root).append('div')
+         .attr('class', 'vis geo_vis')
+         .attr('id', 'geo_vis' + ix)
+         .html([
+           , "<div class='controls'>"
+           , "<button class='control' id='reset_view'>Reset view</button>"
+           , "<select class='control' id='sel_year'></select>"
+           , "<input class='control' type=radio name='flow_type' value='flow1'> imports"
+           , "<input class='control' type=radio name='flow_type' value='flow2'> exports"
+           , "<input class='control' type=radio name='flow_type' value='diff21'> surplus"
+           , "<input class='control' type=radio name='flow_type' value='diff12'> deficit"
+           , "</div>"
+         ].join('\n'));
+    }
 
 
-    g.call(tip);
-    g.selectAll(selector)
-        .on('mouseover', function(d) {
-            if (has_hover_fill)
-                d3.select(this).style('fill', get_hover_fill)
-            tip.show(process_data(d));
-        })
-    g.selectAll(selector)
-        .on('mouseout', function(d,i) {
-            if (has_hover_fill && +focus_code !== +d.properties.COWCODE) {
-                d3.select(this)
-               .style('fill', focus_code ? get_highlight_fill : get_neutral_fill);
+
+
+    function extrema_quantile_set (flow, suffix) {
+        var prevFlow = extrema.max.current_flow();
+        extrema.max.current_flow(flow);
+        extrema.min.current_flow(flow);
+        extrema_reflow();
+        var a = extrema.min(),
+            b = extrema.max(),
+            r = [extrema_quant_scale.domain(d3.range(a, b, (b - a)/3)), a, b];
+        extrema.max.current_flow(prevFlow);
+        extrema.min.current_flow(prevFlow);
+        extrema_reflow();
+        return r;
+    }
+
+    function extrema_quantile (d, flow, suffix) {
+        return extrema_quantile_set(flow, suffix)[0](
+            extrema.max.node_flow({trade_info:d}, suffix));
+    }
+
+
+    function mk_trade_assigners(nn_minmax, deg_minmax, cc_minmax, radius, angle, thisYear) {
+        var as = mk_assigners(nn_minmax, deg_minmax, cc_minmax, radius, angle);
+
+        ///// LABELS
+        as.axis_text.by_total_imports = mk_axis_label('flow1');
+        as.axis_text.by_total_exports = mk_axis_label('flow2');
+        as.axis_text.by_deficit = mk_axis_label('diff12');
+        as.axis_text.by_surplus = mk_axis_label('diff21');
+
+        function mk_axis_label(which) {
+            return function(d,i) {
+                var s = extrema_quantile_set('flow1', '_total'),
+                    a = s[0].domain()[i],
+                    b = i == 2 ? s[2] : s[0].domain()[i + 1];
+                return compact_money(a) + ' to ' + compact_money(b);
             }
-            tip.hide(process_data(d));
-        })
-    return tip;
-}
+        }
+
+        as.axis_assign.by_total_imports = function(d,i)
+        { return angle(extrema_quantile(d, 'flow1', '_total')); }
+        as.axis_assign.by_total_exports = function(d,i)
+        { return angle(extrema_quantile(d, 'flow2', '_total')); }
+        as.axis_assign.by_deficit = function(d,i)
+        { return angle(extrema_quantile(d, 'diff12', '_total')); }
+        as.axis_assign.by_surplus = function(d,i)
+        { return angle(extrema_quantile(d, 'diff21', '_total')); }
 
 
-/********************************************************** */
+        //// MAKE RELATIVE
+        as.radius_assign.by_total_imports = mk_flow_assign('flow1')
+        as.radius_assign.by_total_exports = mk_flow_assign('flow2');
+        as.radius_assign.by_deficit = mk_flow_assign('diff12');
+        as.radius_assign.by_surplus = mk_flow_assign('diff21');
 
-function selected_elements(elems) {
-    var ws = d3.select('#elements_info');
-    var ws_data = ws.selectAll('.element_info')
-        // don't identify data using its list index
-        .data(elems, function(d) { return d.ccode; });
+        function mk_flow_assign(flow) {
+                return function(d) {
+                var r, q;
+                with_new_extrema(thisYear, flow, function() {
+                    q = extrema_quantile(d, flow, '_total');
+                    r = extrema.max.node_flow({trade_info:d}, '_total')
+                      / (extrema.max() - extrema.min());
+                    r = radius((r - q/3) * 3);
+                });
+                return r;
+            }
+        }
 
-    ws_data.exit()
-        .style('color', 'white')
-        .transition()
-        .duration(800)
-        .style('height', '12px')
-        .remove();
+        return as
+    }
 
-    var ws_new = ws_data.enter()
-        .insert('div', ':first-child')
-        .attr('class', 'element_info')
-        .style('background', 'black');
+    function with_new_extrema(thisYear, thisFlow, dothis) {
+        var prevYear = extrema.max.year();
+        var prevFlow = extrema.max.current_flow();
+        extrema.max.year(thisYear);
+        extrema.min.year(thisYear);
+        extrema.min.current_flow(thisFlow);
+        extrema_reflow();
 
-   ws_new.transition()
-   .duration(800)
-   .style('background', 'white');
+        dothis();
 
-   ws_new.append('h3')
-       .text(function (d) { return d.name + ' - ' + d.year; });
+        extrema.max.year(prevYear);
+        extrema.min.year(prevYear);
+        extrema.max.current_flow(prevFlow);
+        extrema_reflow();
+    }
 
-   var flows = [],
-       dic = extrema.max.flow_types();
-   for (var k in dic)
-       flows.push([k, dic[k]]);
-   ws_new.each(function (d) {
-       ws_new.selectAll('p')
-       .data(flows)
-       .enter().append('p')
-       .text(function (ft) { return translate_flow[ft[0]]
-           + ': ' + money(ft[1](d.flow1_total, d.flow2_total)); })
-   });
+
+
+    function mk_tips(g, process_data, selector, has_hover_fill) {
+        // rm tooltips
+        g.selectAll('.d3-tip').remove();
+        // make tooltips
+        var tip = d3.tip()
+          .attr('class', 'd3-tip')
+          .direction('e')
+          .offset([-10, 0])
+          .html(function(d) {
+                if (typeof d === 'undefined' || typeof d.name === 'undefined')
+                    return '<p>No data for this year</p>'
+                else
+                    return '<p>' +
+                    d.name
+                    + '</p><p>Imports are  ' +
+                    money(d.flow1_total)
+                    + '</p><p>Exports are  ' +
+                    money(d.flow2_total)
+                    + '</p>';
+            });
+
+
+        g.call(tip);
+        g.selectAll(selector)
+            .on('mouseover', function(d) {
+                if (has_hover_fill)
+                    d3.select(this).style('fill', get_hover_fill)
+                tip.show(process_data(d));
+            })
+        g.selectAll(selector)
+            .on('mouseout', function(d,i) {
+                if (has_hover_fill && +focus_code !== +d.properties.COWCODE) {
+                    d3.select(this)
+                   .style('fill', focus_code ? get_highlight_fill : get_neutral_fill);
+                }
+                tip.hide(process_data(d));
+            })
+        return tip;
+    }
+
+
+    /********************************************************** */
+
+    function selected_elements(elems) {
+        var ws = d3.select('#elements_info');
+        var ws_data = ws.selectAll('.element_info')
+            // don't identify data using its list index
+            .data(elems, function(d) { return d.ccode; });
+
+        ws_data.exit()
+            .style('color', 'white')
+            .transition()
+            .duration(800)
+            .style('height', '12px')
+            .remove();
+
+        var ws_new = ws_data.enter()
+            .insert('div', ':first-child')
+            .attr('class', 'element_info')
+            .style('background', 'black');
+
+       ws_new.transition()
+       .duration(800)
+       .style('background', 'white');
+
+       ws_new.append('h3')
+           .text(function (d) { return d.name + ' - ' + d.year; });
+
+
+   var flowts = extrema.max.flow_types();
+   var ks = obj_keys(flowts);
+   ws_new.each(function(d) {
+       var eee = d3.select(this);
+       ks.forEach(function(key) {
+       eee.append('p')
+       .text(translate_flow[key]
+           + ': ' + money(flowts[key](d.flow1_total, d.flow2_total)))
+   })
+   })
 
     return ws_data;
 }
