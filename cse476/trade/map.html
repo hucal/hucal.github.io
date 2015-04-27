@@ -3,7 +3,7 @@
     <head>
         <meta charset='utf-8'>
         <meta http-equiv='X-UA-Compatible' content='IE=edge'>
-        <title>D3 Map and Hive Panel, Trade Data Visualization</title>
+        <title>D3 Map, Trade Data Visualization</title>
         <meta name='viewport' content='width=device-width, initial-scale=1'>
 
         <link rel='apple-touch-icon' href='../../apple-touch-icon.png'>
@@ -23,6 +23,8 @@
             <p class='browserupgrade'>You are using an <strong>outdated</strong> browser. Please <a href='http://browsehappy.com/'>upgrade your browser</a> to improve your experience.</p>
         <![endif]-->
 
+    <p>Click a country to show its trade patterns with other countries. With
+    no selection, the total trade volume is shown.</p>
     <div id='global_controls'>
     <input type='checkbox' checked='checked'/> Limit data to top 30?
     </div>
@@ -39,9 +41,8 @@
 <script src='../lib/topojson.v1.min.js'></script>
 <script src='../lib/d3-tip.js'></script>
 <script src='../lib/colorbrewer.js'></script>
-<script src='../hp.js'></script>
-<script src='../d3.hive.v0.dev.js'></script>
-<script src='../lib/D3-Lasso-Plugin/lasso.js'></script>
+<script src='../utilities.js'></script>
+<script src='../color_legend.js'></script>
 
 <script src='trade_vis.js'></script>
 <script>

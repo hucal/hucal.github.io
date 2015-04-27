@@ -62,7 +62,7 @@ function read_data(fname, more) {
         graph.nodes[graph.deg_minmax.max].max_by_deg = true;
         graph.nodes[graph.nn_minmax .max].max_by_nn = true;
         //nodes[graph.cc_minmax .max] .max_by_cc = true;
-        data[fname] = graph;
+        data[fname.replace('data/', '')] = graph;
         if (more)
             more();
     });

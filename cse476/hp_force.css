@@ -43,7 +43,7 @@ text.axis-label, text-axis_title {
 }
 
 body {
-    min-width: 900px;
+    min-width: 300px;
     max-width: 1500px;
 }
 
