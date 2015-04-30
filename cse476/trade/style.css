@@ -1,3 +1,7 @@
+.controls span{
+    margin: 0 8px;
+    border-bottom: solid black 1px;
+}
 #all_vis {
     text-align:center;
 }

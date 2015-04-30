@@ -23,14 +23,17 @@
             <p class='browserupgrade'>You are using an <strong>outdated</strong> browser. Please <a href='http://browsehappy.com/'>upgrade your browser</a> to improve your experience.</p>
         <![endif]-->
 
+    <h1 style='text-align:center'>Top 40 Countries by Total Import and Export Volume</h1>
+    <h2 style='text-align:center'>1870 to 2008</h2>
     <p>Map: Click a country to show its trade patterns with other countries. With
     no selection, the total trade volume is shown.</p>
 
     <p>Hive Plot: Draw a lasso with the mouse or touchscreen to select multiple nodes.</p>
 
-    <div id='global_controls'>
+    <div id='global_controls' class='controls'>
     <!--button id='add_hp'>Add HP</button--!>
-    <input type='checkbox' checked='checked'/> Limit data to top 30?
+    <!--<input type='checkbox' checked='checked'/> Limit data to top 30?--!>
+        <span><select class='control' id='sel_year'></select> Year</span>
     </div>
 
     <div id='all_vis'>
@@ -56,7 +59,7 @@
 <script>
 
 hp_vis(data_man)
-    .axis_assign('by_deficit')
+    .axis_assign('by_total_exports')
     .radius_assign('by_total_exports')();
 /*    (function(dat,cc) {
         hp_vis(data_man)
@@ -70,6 +73,16 @@ d3.json('data/cshapes_q4.topo.json', function(error, topology) {
     var ggg = geo_vis(topojson.presimplify(topology), data_man)()
 });
 
+var index = 0
+d3.select('#global_controls select#sel_year')
+    .attr('onchange', 'all_hp_vis[' + index + '].year(this.value)()' +
+                      ';all_map_vis[' + index + '].year(this.value)()')
+    .selectAll('option')
+    .data(available_years)
+    .enter().append('option')
+.each(function(d) {if (d==2008) d3.select(this).attr('selected', 'selected')})
+    .attr('value', function(y) { return y; })
+    .text(function(y) { return y; });
 
 </script>
 </body>
