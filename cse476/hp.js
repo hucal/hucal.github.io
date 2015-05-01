@@ -141,6 +141,7 @@ function mk_hive_plot() {
                 node_elems.on("click", toggle_select_node);
         }
 
+        if (typeof get_axis_title !== 'undefined')
         g.selectAll("text.axis_title")
             .data(angle.range())
           .enter().append("text")
