@@ -198,8 +198,14 @@ function mk_hp(fname, id_, col_high, col_persistent, col_low, axis_by, radius_by
         .data(cfn.angle.range())
       .enter().append("text")
         .attr("class", "axis-label")
-        .attr("x", function (d) { return hive_plot.outerRadius() * Math.cos(d3.mean(d)); })
-        .attr("y", function (d) { return hive_plot.outerRadius() * Math.sin(d3.mean(d)); })
+        .each(function(d) {
+           var a = d3.mean(d);
+           var x = (30 + hive_plot.outerRadius()) * Math.cos(a),
+               y = (30 + hive_plot.outerRadius()) * Math.sin(a);
+           d3.select(this)
+            .attr("x",x).attr("y",y)
+            .attr("transform", "rotate(" + (degrees(a) + 90) + " " + x + " " + y + ")" )
+        })
         .attr("text-anchor", "middle")
         .style("font-weight", "bold")
         .text(as.axis_text[cfn.axis_by_what])

@@ -19,7 +19,7 @@ var data_man = mk_data_manager(),
 var min = 0.0000001;
 
 // COLOR AND DATA RANGE
-var compact_frm = d3.format('.1s');
+var compact_frm = d3.format('.3s');
 function compact_money(n) { return '$' + compact_frm(n * 1E6)};
 
 var frm = d3.format('.5s')
@@ -131,7 +131,7 @@ function mk_trade_assigners(nn_minmax, deg_minmax, cc_minmax, radius, angle, thi
                 max = ex.max(),
                 v = extrema.type(flow).node_flow(d);
 
-                r = v / (max - min);
+                r = (v - min) / (max - min);
                 r = (r - q/3) * 3;
                 r = radius(r);
             return r;
@@ -302,8 +302,8 @@ function geo_vis(topology, dm, width, height) {
         draw_color_legend('Color scheme', function (d, i) {
             extrema.year(year).type(current_flow);
             var r = compact_money(extrema.get_color_scale().invert(d));
-            if (i === extrema.color_category_count()) r = '>' + r;
-            if (i === 0) r = '<' + r;
+            if (i === extrema.color_category_count()) r = '≥' + r;
+            if (i === 0) r = '≤' + r;
             return r;
         }, color[extrema.color_type()], root, 30);
 
@@ -376,13 +376,8 @@ function geo_vis(topology, dm, width, height) {
         .append('path')
         .attr('d', path)
         .attr('class', function(d) { return 'feature ccode_' + d.properties.COWCODE; })
-        .on('mouseover', function(d) {
-            d3.select(this)
-                .style('fill', get_hover_fill)
-        })
-        .on('mouseout', function(d) {
-            d3.select(this).style('fill', geo.get_fill_func())
-        })
+        .on('mouseover', select_node)
+        .on('mouseout', unselect_node)
 
         // match each trade record with corresponding country element
         g.selectAll('g.country')
@@ -441,8 +436,8 @@ function geo_vis(topology, dm, width, height) {
         draw_color_legend('Color scheme', function (d, i) {
             extrema.year(year).type(current_flow);
             var r = compact_money(extrema.get_color_scale().invert(d));
-            if (i === extrema.color_category_count()) r = '>' + r;
-            if (i === 0) r = '<' + r;
+            if (i === extrema.color_category_count()) r = '≥' + r;
+            if (i === 0) r = '≤' + r;
             return r;
         }, color[extrema.color_type()], root, 30);
 
@@ -501,7 +496,7 @@ function hp_vis(dm, width, height) {
     vis.g = function() { return g; }
     vis.svg = function() { return svg; }
 
-    function col_high(d,i) { console.log(current_flow); return extrema.year(year).type(current_flow).node_color(d); };
+    function col_high(d,i) { return extrema.year(year).type(current_flow).node_color(d); };
     var col_low = '#444';
 
     vis.current_flow = function(cf) {
@@ -518,8 +513,8 @@ function hp_vis(dm, width, height) {
         draw_color_legend('Color scheme', function (d, i) {
             extrema.year(year).type(current_flow);
             var r = compact_money(extrema.get_color_scale().invert(d));
-            if (i === extrema.color_category_count()) r = '>' + r;
-            if (i === 0) r = '<' + r;
+            if (i === extrema.color_category_count()) r = '≥' + r;
+            if (i === 0) r = '≤' + r;
             return r;
         }, color[extrema.color_type()], d3.select('#hp_vis' + index), 30);
 
@@ -666,7 +661,7 @@ function hp_vis(dm, width, height) {
 
     hive_plot = mk_hive_plot()
             .innerRadius(20)
-            .outerRadius(width/2 - 45)
+            .outerRadius(width * 0.35)
             .node_height(6)
             .node_width (6);
 
@@ -719,8 +714,15 @@ function hp_vis(dm, width, height) {
         .data(angle.range())
       .enter().append('text')
         .attr('class', 'axis-label')
-        .attr('x', function (d) { return 1.1 * hive_plot.outerRadius() * Math.cos(d3.mean(d)); })
-        .attr('y', function (d) { return 1.1 * hive_plot.outerRadius() * Math.sin(d3.mean(d)); })
+        .each(function(d) {
+           var a = d3.mean(d);
+           var x = (10 + hive_plot.outerRadius()) * Math.cos(a),
+               y = (10 + hive_plot.outerRadius()) * Math.sin(a);
+           d3.select(this)
+            .attr("x",x).attr("y",y)
+            .attr("transform", "rotate(" + (degrees(a) + 90) + " " + x + " " + y + ")" )
+        })
+
         .attr('text-anchor', 'end')
         .style('font-weight', 'bold')
         .text( assigners.axis_text[axis_assign] )
@@ -769,8 +771,8 @@ function hp_vis(dm, width, height) {
         draw_color_legend('Color scheme', function (d, i) {
             extrema.year(year).type(current_flow);
             var r = compact_money(extrema.get_color_scale().invert(d));
-            if (i === extrema.color_category_count()) r = '>' + r;
-            if (i === 0) r = '<' + r;
+            if (i === extrema.color_category_count()) r = '≥' + r;
+            if (i === 0) r = '≤' + r;
             return r;
         }, color[extrema.color_type()], root, 30);
 
@@ -1021,7 +1023,6 @@ function mk_extrema_manager(args){
 b=               type_funcs[type](extrema[year]['flow1']['max'],
                                 extrema[year]['flow2']['max'])
             ;
-        console.log(a,b)
         return Math.min(a,b)
     }
 

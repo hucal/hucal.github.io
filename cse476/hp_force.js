@@ -142,28 +142,18 @@ function draw_hp_force(nodes, links) {
             function(d, i, islink) {
                 if (islink) d = nodes[d.source];
                 return !islink ? color(d.a) : d['max_' + config.axis_by_what] ? color(d.a) : "#aaa";
-        });
+        })
+        .get_axis_title(function() { return axis_text[config.axis_by_what]; });
     // DRAW IT
     var g = hive_plot();
 
 
-    // EXAMPLE svg grid
     g.selectAll("circle.grid")
         .data(radius.ticks(10))
       .enter().append("g")
         .attr("class", "grid")
         .append("circle")
         .attr("r", function (d) { return radius(d); });
-
-    g.selectAll("text.axis_title")
-        .data(angle.range())
-      .enter().append("text")
-        .attr("class", "axis_title")
-        .attr("x", function (d) { return (25 + hive_plot.outerRadius()) * Math.cos(d3.mean(d)); })
-        .attr("y", function (d) { return (25 + hive_plot.outerRadius()) * Math.sin(d3.mean(d)); })
-        .attr("text-anchor", "middle")
-        .style("font-weight", "bold")
-        .text( axis_text[config.axis_by_what] );
 
 
     //TODO  use quick node size animation to double highlight

@@ -61,6 +61,7 @@ function get_cloned(n) {
 function mk_hive_plot() {
     var svg, angle, radius, nodes, links, toggle_select_node, toggle_select_link,
         innerRadius, outerRadius, elem_radius, elem_angle, elem_color, opacity,
+        get_axis_title = undefined,
         node_width=6, node_height=2, draw_nodes=true, draw_links=true;
 
     var vis = function() {
@@ -139,6 +140,26 @@ function mk_hive_plot() {
             if (toggle_select_link)
                 node_elems.on("click", toggle_select_node);
         }
+
+        g.selectAll("text.axis_title")
+            .data(angle.range())
+          .enter().append("text")
+            .attr("class", "axis_title")
+            .each(function(d, i) {
+               var a = d3.mean(d);
+               var x = (10 + outerRadius) * Math.cos(a),
+                   y = (10 + outerRadius) * Math.sin(a);
+               a = degrees(a) + 90
+               console.log(a, i)
+               d3.select(this)
+                .attr("x",x).attr("y",y)
+                .attr("transform", "rotate(" + a + " " + x + " " + y + ")" )
+            })
+            .attr("text-anchor", "middle")
+            .style("font-weight", "bold")
+            .text( get_axis_title() );
+
+
         return g;
     }
 
@@ -172,6 +193,8 @@ function mk_hive_plot() {
                             elem_angle = _; return vis; }
     vis.elem_color = function(_) { if (!arguments.length) return elem_color ;
                             elem_color = _; return vis; }
+    vis.get_axis_title = function(_) { if (!arguments.length) return get_axis_title ;
+                            get_axis_title = _; return vis; }
     vis.radius = function(_) { if (!arguments.length) return radius ;
                             radius = _; return vis; }
     vis.angle = function(_) { if (!arguments.length) return angle ;

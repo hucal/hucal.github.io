@@ -178,3 +178,6 @@ function interpolateFloor(a, b) {
 }
 
 
+function rad2deg(rad) {
+    return rad * 180 / Math.PI;
+}
