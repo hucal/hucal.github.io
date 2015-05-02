@@ -943,7 +943,7 @@ function mk_extrema_manager(args){
         if (typeof extrema[year] === 'undefined')
             ex.year(year);
         if (typeof extrema[year][type] === 'undefined')
-            extrema[year][type] = { max: 0, min: 0 };
+            extrema[year][type] = {};
         return ex;
     }
     ex.year = function(_) {
@@ -1038,6 +1038,12 @@ b=               type_funcs[type](extrema[year]['flow1']['max'],
         if (!type.startsWith('flow'))
             return;
         var exs = ex();
+        if (exs['max'] === undefined || exs['min'] === undefined) {
+            exs['max'] = n;
+            exs['min'] = n;
+            return;
+        }
+
         if (n > exs['max'] && n >= 0)
             exs['max'] = n;
         if (n < exs['min'] && n >= 0)
