@@ -769,7 +769,7 @@ function hp_vis(dm, width, height) {
 
 
         draw_color_legend('Color scheme', function (d, i) {
-            extrema.year(year).type(current_flow);
+            extrema.year(year).type('flow1');
             var r = compact_money(extrema.get_color_scale().invert(d));
             if (i === extrema.color_category_count()) r = '≥' + r;
             if (i === 0) r = '≤' + r;
