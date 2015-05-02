@@ -767,18 +767,8 @@ function hp_vis(dm, width, height) {
     tips = mk_tips(g, function(d){return d;}, 'rect.node')
 
 
-
-        draw_color_legend('Color scheme', function (d, i) {
-            extrema.year(year).type('flow1');
-            var r = compact_money(extrema.get_color_scale().invert(d));
-            if (i === extrema.color_category_count()) r = '≥' + r;
-            if (i === 0) r = '≤' + r;
-            return r;
-        }, color[extrema.color_type()], root, 30);
-
-
-
-
+    // draw color legend
+    vis.current_flow(current_flow);
 
 
     }
