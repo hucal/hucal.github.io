@@ -16,7 +16,7 @@
 }
 
 g.grid circle {
-    stroke: lightgrey;
+    stroke: #eee;
     stroke-dasharray: 20,10;
     fill: none;
 }
