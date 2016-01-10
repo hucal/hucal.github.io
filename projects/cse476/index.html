@@ -1,0 +1,123 @@
+<!doctype html>
+<html class="no-js" lang>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title> CSE476 Overview
+               </title>
+        <meta name="description" content>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <link rel="apple-touch-icon" href="../../apple-touch-icon.png">
+        <link rel="shortcut icon" href="../../favicon.ico" />
+
+        <link rel="stylesheet" href="../../css/normalize.css">
+        <link rel="stylesheet" href="../../css/main.css">
+        <link rel="stylesheet" href="../../css/syntax.css">
+    
+        <script src="../../js/modernizr-2.8.3.min.js"></script>
+    </head>
+
+    <header>
+        <nav>
+        <ul>
+        <li><a href="../../index.html">Home</a></li>
+        <li><a href="../../projects.html">Projects</a></li>
+        <li><a href="../../posts.html">Archive</a></li>
+        <li><a href="../../about.html">About Me</a></li>
+        </ul>
+        </nav>
+    </header>
+
+    <body>
+    <!--[if lt IE 8]>
+    <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+    <![endif]-->
+    <article>
+    <style>
+.trade_vis {
+    padding: 12px;
+    width: 90%;
+}
+.trade_vis, .trade_vis * {
+    background: #30352F;
+    color: #eee;
+}
+</style>
+
+<h2>CSE476 Visualizations Overview</h2>
+<p>
+I've made several Hive Plot network visualizations using
+<a href="http://d3js.org">Mike Bostock's D3</a>.
+Go to <a style="text-decoration:none" href="http://hiveplot.net"><a href="http://hiveplot.net">hiveplot.net</a></a>
+for a thorough explanation or try my Bootstro.js based
+</p><p>
+<a href="hp_force.html">Hive Plot tutorial: a Hive Plot with Force Directed Layout
+</a></p>
+
+
+<div class="trade_vis">
+<h3>Trade Visualizations</h3>
+<p>Link: <a href="trade/brushed.html">Trade Visualization (Hive Panel and D3 Map)</a></p>
+
+<!-- TODO explain -->
+
+<p>Source: <a href="http://www.correlatesofwar.org/data-sets/bilateral-trade">Bilateral Trade v3.0 from the Correlates of War.</a>
+See the trade/data directory for data for every three years starting form 1870 and ending in 2008. Also helpful is this <a href="trade/Makefile">Makefile</a> and this <a href="trade/data/cow_trade_csvs_to_jsons.py">python script</a>.
+</p>
+
+</div>
+
+<h3>Linux vs E. Coli</h3>
+<p>This visualization uses the same data from Krzywinski et al. 2011
+(see <a href="http://hiveplot.net">hiveplot.net</a>), which in turn used the same data as Comparing genomes to computer operating systems ... by Yan et al. 2010</p>
+
+<p><a href="hp_ecoli_linux.html">Linux Call graph vs E Coli Gene Regulation Network (Hive Panel)
+</a>. It runs <b>very slow</b>, but that's because E. Coli has about 10,000 links and the Linux network has about 30,000 links</p>
+
+<p>Data: two JSON files
+<a href="data/linux.json">Linux</a>
+<a href="data/ecoli.json">E. Coli</a>
+parsed from the Krzywinski's DOT files.
+</p>
+
+
+
+<div class="hfill"></div>
+<a name="phd"></a>
+<h3>PhD Genealogy</h3>
+<p>Earlier in the semester I also made a few visualizations of the PhD tree of
+mathematicians dating back to Gauss. The biggest challenge was scraping the
+data off wikipedia.
+This is the visualization:
+<a href="math/vis_profs.html">Mathematical Genealogy (Circle Packing Tree Layout)</a>,
+<!--
+    while this one incorporates the location of their university or institution:
+<a href="math/vis_unis_profs.html">Mathematical Genealogy (D3 Map)</a>.
+-->
+</p>
+<p>Check out the JSON files
+<a href="data/Gauss.json">here</a> and
+<a href="data/Laplace.json">here</a>; or
+this
+<a href="data/Zygmund.json">representative file</a>.
+</p>
+
+    </article><!-- can't have whitespace here--><div id="sidebar">
+    <div class="centerme">
+
+    </div>
+    </div>
+    </body>
+
+    <footer>
+        <ul id="credits">
+        <li>Made using Hakyll           </li>
+        <li>Haskell functional language </li>
+        <li>VIM text editor             </li>
+        <li>MDN docs for web developers </li>
+        <li>Graciously hosted by github </li>
+        </ul>
+        <p>Copyright 2015 Hugo Rivera</p>
+    </footer>
+</html>

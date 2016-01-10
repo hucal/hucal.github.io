@@ -1,0 +1,163 @@
+<!doctype html>
+<html class="no-js" lang>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title> PhD Genealogy
+               </title>
+        <meta name="description" content>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <link rel="apple-touch-icon" href="../../../apple-touch-icon.png">
+        <link rel="shortcut icon" href="../../../favicon.ico" />
+
+        <link rel="stylesheet" href="../../../css/normalize.css">
+        <link rel="stylesheet" href="../../../css/main.css">
+        <link rel="stylesheet" href="../../../css/syntax.css">
+    
+        <link rel="stylesheet" href="style.css"> <link rel="stylesheet" href="../../../css/minimal_sidebar.css">
+    
+        <script src="../../../js/modernizr-2.8.3.min.js"></script>
+    </head>
+
+    <header>
+        <nav>
+        <ul>
+        <li><a href="../../../index.html">Home</a></li>
+        <li><a href="../../../projects.html">Projects</a></li>
+        <li><a href="../../../posts.html">Archive</a></li>
+        <li><a href="../../../about.html">About Me</a></li>
+        </ul>
+        </nav>
+    </header>
+
+    <body>
+    <!--[if lt IE 8]>
+    <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+    <![endif]-->
+    <article>
+    See <a href="../index.html#phd">this page for an explanation.</a>
+<div id="focus">
+    <h1 id="current-parent">Click or tap to focus/unfocus</h1>
+    <h2 id="current-hover">hover to see names</h2>
+</div>
+<script src="../lib/d3.v3.min.js"></script>
+<script>
+
+var margin = 80,
+    diameter = 800;
+
+var pack = d3.layout.pack()
+    .padding(1/4)
+    .radius(100)
+    .size([diameter - margin, diameter - margin])
+    .value(function(d) { return "children" in d ?
+                                d.children ?
+                        (d.children.length + 1) * 30 : 60 : 60; })
+
+var svg = d3.select("article").append("svg")
+    .attr("width", diameter)
+    .attr("height", diameter)
+  .append("g")
+    .attr("transform", "translate(" + diameter / 2 + "," + diameter / 2 + ")");
+
+var queryString = {};
+
+// read query string, from Stackoverflow somewhere...
+location.search.substr(1)
+    .split("&").forEach(function(item)
+            {queryString[item.split("=")[0]] = item.split("=")[1]});
+
+var data = "../data/" + queryString.json_data;
+
+if (queryString.json_data === undefined)
+    data = "../data/Gauss.json";
+
+d3.json(data, function(error, root) {
+  if (error) return console.error(error);
+  root = root.doctors_root;
+
+  var back_color = "white";
+  var color = d3.scale.linear()
+      .domain([0, root.depth])
+      .range(["blue", "lime"])
+      .interpolate(d3.interpolateHcl);
+
+  var focus = root,
+      nodes = pack.nodes(root),
+      view;
+
+  var circle = svg.selectAll("circle")
+      .data(nodes)
+    .enter().append("circle")
+      .attr("class", function(d) { return d.parent ? d.children ? "node" : "node node--leaf" : "node node--root"; })
+      .style("fill", function(d) { return d.children ? color(d.depth) : null; })
+      .on("click", function(d) {
+          if (focus !== d) zoom(d), d3.event.stopPropagation();
+          document.getElementById("current-hover").innerHTML = d.name; })
+      .on("mouseenter", function(d) {
+          document.getElementById("current-hover").innerHTML = d.name; })
+      ;
+
+  var text = svg.selectAll("text")
+      .data(nodes)
+    .enter().append("text")
+      .attr("class", "label")
+      .style("fill-opacity", function(d) { return d.parent === root ? 1 : 0; })
+      .style("display", function(d) { return d.parent === root ? null : "none"; })
+      .text(function(d) { return d.name; });
+
+  var node = svg.selectAll("circle,text");
+
+  svg.selectAll("circle")
+      .append("title").attr("text", function (d) { return d.name; })
+
+  zoomTo([root.x, root.y, root.r * 2 + margin]);
+
+  function zoom(d) {
+    var focus0 = focus; focus = d;
+    document.getElementById("current-parent").innerHTML = "Parent: " + d.name;
+
+    var transition = d3.transition()
+        .duration(d3.event.altKey ? 50 : 1000)
+        .tween("zoom", function(d) {
+          var i = d3.interpolateZoom(view, [focus.x, focus.y, focus.r * 2 + margin]);
+          return function(t) { zoomTo(i(t)); };
+        });
+
+    transition.selectAll("text")
+      .filter(function(d) { return d.parent === focus || this.style.display === "inline"; })
+        .style("fill-opacity", function(d) { return d.parent === focus ? 1 : 0; })
+        .each("start", function(d) { if (d.parent === focus) this.style.display = "inline"; })
+        .each("end", function(d) { if (d.parent !== focus) this.style.display = "none"; });
+  }
+
+  function zoomTo(v) {
+    var k = diameter / v[2]; view = v;
+    node.attr("transform", function(d) { return "translate(" + (d.x - v[0]) * k + "," + (d.y - v[1]) * k + ")"; });
+    circle.attr("r", function(d) { return d.r * k; });
+  }
+});
+
+d3.select(self.frameElement).style("height", diameter + "px");
+
+</script>
+
+    </article><!-- can't have whitespace here--><div id="sidebar">
+    <div class="centerme">
+
+    </div>
+    </div>
+    </body>
+
+    <footer>
+        <ul id="credits">
+        <li>Made using Hakyll           </li>
+        <li>Haskell functional language </li>
+        <li>VIM text editor             </li>
+        <li>MDN docs for web developers </li>
+        <li>Graciously hosted by github </li>
+        </ul>
+        <p>Copyright 2015 Hugo Rivera</p>
+    </footer>
+</html>
