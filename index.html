@@ -1,87 +1,121 @@
 <!doctype html>
-<html class="no-js" lang>
-    <head>
-        <meta charset="utf-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <title> index
-               </title>
-        <meta name="description" content>
-        <meta name="viewport" content="width=device-width, initial-scale=1">
+<!--[if lt IE 7 ]> <html class="ie ie6 ie-lt10 ie-lt9 ie-lt8 ie-lt7 no-js"
+    lang="en"> <![endif]-->
+<!--[if IE 7 ]>    <html class="ie ie7 ie-lt10 ie-lt9 ie-lt8 no-js" lang="en">
+<![endif]-->
+<!--[if IE 8 ]>    <html class="ie ie8 ie-lt10 ie-lt9 no-js" lang="en">
+<![endif]-->
+<!--[if IE 9 ]>    <html class="ie ie9 ie-lt10 no-js" lang="en"> <![endif]-->
+<!--[if gt IE 9]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <!--HTML5 Reset: https://github.com/murtaugh/HTML5-Reset-->
+  <!-- Always force latest IE rendering engine (even in intranet) -->
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
-        <link rel="apple-touch-icon" href="./apple-touch-icon.png">
-        <link rel="shortcut icon" href="./favicon.ico" />
+  <title>Home Page</title>
+  <meta name="author" content="Hugo Rivera" />
+  <meta name="description" content="/">
+  <meta name="Copyright" content="Hugo Rivera" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="shortcut icon" href="./favicon.ico" />
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+  <link rel="stylesheet" href="./css/normalize.css" />
+  <link rel="stylesheet" href="./css/grid.css" />
+  <link rel="stylesheet" href="./css/style.css" />
+  <link rel="stylesheet" href="./css/syntax.css">
+  
+</head>
+<body>
+  <header>
+    <nav>
+      <div class="row heavy">
+        <div class="col"><a href="./posts.html">Archive</a></div>
+        <div class="col"><a href="./projects.html">Projects</a></div>
+        <div class="col logo"><a href="./index.html">Hugo Rivera</a></div>
+        <div class="col"><a href>...</a></div>
+        <div class="col"><a href="./about.html">About Me</a></div>
+      </div>
+    </nav>
+  </header>
 
-        <link rel="stylesheet" href="./css/normalize.css">
-        <link rel="stylesheet" href="./css/main.css">
-        <link rel="stylesheet" href="./css/syntax.css">
+  <div class="container">
+    <div class="row">
+    <div class="col sidebar">
+    <aside>
     
-        <script src="./js/modernizr-2.8.3.min.js"></script>
-    </head>
 
-    <header>
-        <nav>
-        <ul>
-        <li><a href="./index.html">Home</a></li>
-        <li><a href="./projects.html">Projects</a></li>
-        <li><a href="./posts.html">Archive</a></li>
-        <li><a href="./about.html">About Me</a></li>
-        </ul>
-        </nav>
-    </header>
-
-    <body>
-    <!--[if lt IE 8]>
-    <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
-    <![endif]-->
-    <div id="sidebar">
-    <div class="centerme">
-    <h2>Between two lambdas — index</h2>
     
+    </aside>
     </div>
-    </div><!-- can't have whitespace here--><article>
-    <h2>Welcome</h2>
 
-<ul class="project_list">
-    
-    <li class="project">
-        <a href="./projects/periodic/index.html">
-        <img src="projects/periodic/thumb.png"" />
-        <br />
-        Periodic Table in D3
-        </a>
-    </li>
-    
-    <li class="project">
-        <a href="./projects/cse476/hp_force.html">
-        <img src="./images/seal-05.jpg"" />
-        <br />
-        Hive Plot vs Force Directed Layout
-        </a>
-    </li>
-    
-    <li class="project">
-        <a href="./projects/cse476/trade/brushed.html">
-        <img src="./images/seal-05.jpg"" />
-        <br />
-        D3 Map and Hive Plot, Trade Data Visualization
-        </a>
-    </li>
-    
-    <li class="project">
-        <a href="./projects/cse476/index.html">
-        <img src="./images/seal-05.jpg"" />
-        <br />
-        CSE476 Overview
-        </a>
-    </li>
-    
-</ul>
+    <div class="col article">
+    <article>
+      <h1>Home Page</h1>
 
+    <!--[if lt IE 8]>
+    <p class="browserupgrade">You are using an <strong>outdated</strong> browser.
+    Please <a href="http://browsehappy.com/">upgrade your browser</a>
+    to improve your experience.</p>
+    <![endif]-->
+
+    <h2>Projects</h2>
+
+<div class="row projectsrow">
+
+
+<div class="col project">
+    
+    <a href="./projects/periodic/index.html">
+    <div class="preview">
+    <img class="thumbnail" src="projects/periodic/thumb.png" />
+    </div>
+    <br />
+    Periodic Table in D3
+    </a>
+    
+</div>
+
+
+
+<div class="col project">
+    
+    <div class="preview"><p>A tutorial on reading hive plots, a method of visualizing networks. The HP is linked to an intuitive force directed layout.</p></div>
+    <br />
+    <a href="./projects/cse476/hp_force.html">Hive Plot vs Force Directed Layout</a>
+    
+</div>
+
+
+
+<div class="col project">
+    
+    <div class="preview"><p>International trade networks visualized using an information-rich hive plot and an easy to read map.</p></div>
+    <br />
+    <a href="./projects/cse476/trade/brushed.html">D3 Map and Hive Plot, Trade Data Visualization</a>
+    
+</div>
+
+
+
+<div class="col project">
+    
+    <div class="preview"><p>Description of work done in my visualization class.</p></div>
+    <br />
+    <a href="./projects/cse476/index.html">CSE476 Overview</a>
+    
+</div>
+
+
+</div>
+
+
+<h2>Posts</h2>
 
 <ul class="post_list">
     
         <li>
-            <a href="./posts/2016-01-10-outline.html">Writing</a> January 10, 2016
+            <a href="./posts/2016-01-10-outline.html">Writing</a> January 10, 2016. A list of books.
         </li>
     
 </ul>
@@ -91,16 +125,22 @@
 and in the <a href="./projects.html">project page</a>.</p>
 
     </article>
-    </body>
+    </div>
+    </div>
+  </div>
 
-    <footer>
-        <p id="copyright">Copyright 2015 Hugo Rivera</p>
-        <p id="credits">This website was created using
-        <a href="https://www.haskell.org/"><img src="./images/logo_haskell.png" width="32px"></a>
-        <a href="https://jaspervdj.be/hakyll/"><img src="./images/logo_hakyll.png" width="32px"></a>
-        <a href="http://www.vim.org/"><img src="./images/logo_vim.png" width="32px"></a>
-        <a href="http://developer.mozilla.org/"><img src="./images/logo_mdn.png" width="32px"></a>
-        <a href="http://htmldog.com/"><img src="./images/logo_dog.gif" width="32px"></a>
-        </p>
-    </footer>
+  <footer>
+    <p id="copyright" class="heavy">Copyright 2016 Hugo Rivera</p>
+    <div class="hfill"></div>
+
+    <p id="credits">
+    <a href="https://www.haskell.org/"><img src="./images/logo_haskell.png"></a>
+    <a href="https://jaspervdj.be/hakyll/"><img src="./images/logo_hakyll.png"></a>
+    <a href="http://www.gnu.org/software/emacs//"><img src="./images/logo_emacs.png"></a>
+    <a href="http://www.vim.org/"><img src="./images/logo_vim.png"></a>
+    <a href="http://developer.mozilla.org/"><img src="./images/logo_mdn.png"></a>
+    <a href="http://htmldog.com/"><img src="./images/logo_dog.gif"></a>
+    </p>
+  </footer>
+</body>
 </html>
