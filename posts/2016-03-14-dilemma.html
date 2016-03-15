@@ -24,6 +24,12 @@
   <link rel="stylesheet" href="../css/grid.css" />
   <link rel="stylesheet" href="../css/style.css" />
   <link rel="stylesheet" href="../css/syntax.css">
+  <script type="text/x-mathjax-config">
+   MathJax.Hub.Config({
+       text2jax: { processClass: "math" },
+   });
+  </script>
+  <script type="text/javascript" src="../js/MathJax.js?config=TeX-AMS_SVG-full"></script>
   
 </head>
 <body>
@@ -43,6 +49,7 @@
     <div class="row">
     <div class="col sidebar">
     <aside>
+    <a href="../index.html"><img class="logo" src="../images/logo.png" /></a>
     
 
     
@@ -175,7 +182,7 @@ March 14, 2016  by Hugo Rivera
 fitness1 <span class="fu">=</span> scoreGenome defaultPayoffs samplePopulation</code></pre></div>
 <h4 id="selection">Selection</h4>
 <p>Mean individuals receive one mating. Individuals one standard deviation above the fitness level receive two matings and those below the fitness level receive no matings. An individual may mate with itself.</p>
-<p><br /><span class="math display">$$\left[ \frac{e - \mathbb{E} l}{\sigma_l} \right]$$</span><br /></p>
+<p><span class="math display">\[\left[ \frac{e - \mathbb{E} l}{\sigma_l} \right]\]</span></p>
 <div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> mean l <span class="fu">=</span> sum l <span class="fu">/</span> (fromIntegral <span class="fu">$</span> length l)
 <span class="ot">&gt;</span> stddev l <span class="fu">=</span> <span class="kw">let</span> m <span class="fu">=</span> mean l <span class="kw">in</span> sqrt <span class="fu">$</span> (sum [(e <span class="fu">-</span> m)<span class="fu">**</span><span class="dv">2</span> <span class="fu">|</span> e <span class="ot">&lt;-</span> l] ) <span class="fu">/</span> (fromIntegral <span class="fu">$</span> length l)</code></pre></div>
 <p>[(a,3),(b,2),(c,-1)] -&gt; [a,a,a,b,b]</p>
