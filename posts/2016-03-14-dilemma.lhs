@@ -2,148 +2,212 @@
 title: Evolving New Strategies in Haskell
 author: Hugo Rivera
 date: March 13, 2016
-tags: [Haskell, Genetic Algorithm]
+tags: [Haskell, Genetic Algorithm, Iterated Prisoner's Dilemma, Prisoner's Dilemma]
 description: This document implements a genetic algorithm that searches for strategies to play the iterated prisoner's dilemma as described in Axelrod (1987) and in Mitchell (1995).
 ---
 
+== Genetic Algorithms
+
+A **genetic algorithm** is a biologically inspired way of finding the best
+solution to a computational problem. It works by encoding the solution to a
+problem as an artificial **genome**. The algorithm keeps a **population**,
+which is made out of many genomes. GAs are iterative algorithms, meaning they
+start by guessing a solution (by generating many random genomes) and then
+they improve that guess until a good enough solution is found or until
+computation time runs out. The solutions, that is, the genomes are improved
+in a three step process:
+
+1. The genomes in the population are scored and the ones that offer the best
+solutions are more likely to be **selected** for the next step.
+2. Genomes are paired randomly for an operation called **crossover** where two
+genomes are combined to make similar genomes. This is analogous to sexual
+reproduction.
+3. These new genomes replace the current population. There is a chance that
+some of them are chosen to be **mutated**, that is, they are modified randomly.
+This can be interpreted as an insurance policy that helps keep a diverse
+population.
+
+See "Genetic Algorithms" (1992) by John Holland for a detailed description from
+one of the creators of this technique. I am following Melanie Mitchell's
+tutorial "Genetic Algorithms: An Overview" (1995).
+
+This document is generated from a literate Haskell file, meaning this
+is both a computer program and an essay.
+Now that you know that, you should also know literate Haskell documents make
+friendlier computer programs than literary works so please excuse this
+necessary fragment of Haskell code.
+
+> import Control.Monad               ((<=<))
+> import Control.Monad.State         (StateT(..), get, put)
+> import Control.Monad.Writer.Strict (Writer, runWriter, tell)
+> import Text.Printf                 (printf)
+> import System.Random   (Random(..), RandomGen, randoms, next, mkStdGen)
+> import qualified Data.Map as M     (Map, insert, (!), singleton, elems)
+
 == The Prisoner's Dilemma
 
-  TODO sources
-TODO describe the game
-TODO describe competition
+The Prisoner's Dilemma is a two player game. Suppose two people get arrested
+for committing a crime together. They are brought into separate rooms and
+offered the choice to cooperate with the authorities by testifying against
+the other suspect. They know that if they both cooperate, they will be
+discredited and get 4 years in prison. If only one cooperates, that person
+will get no jail time while their partner receives 5 years. If both choose to
+remain silent or "defect" they will receive 1 year in prison.
+In this game, a step is represented by two moves: cooperation or defection.
+
+> data Move = C | D deriving (Show, Eq, Bounded)
+> type GameStep = (Move, Move)
+
+A convenient scoring system assigns high scores to low jail time; i.e.
+if player 1 chooses to cooperate while player 2 defects then player 1 gets 5
+points and player 2 gets 0 points. This scoring system can be encoded in a
+matrix that reports the score of both players for every possible step of the
+game:
+
+> type ScoreMatrix = [(GameStep, (Integer, Integer))]
+> defaultScoreMatrix :: ScoreMatrix
+> defaultScoreMatrix = [ ((C, C), (1, 1))
+>                      , ((C, D), (5, 0))
+>                      , ((D, C), (0, 5))
+>                      , ((D, D), (4, 4)) ]
+
+In the Iterated Prisoner's dilemma this game can be played multiple times to
+try to achieve the highest score.
+Robert Axelrod had extensively studied this game when he held a competition to
+find the most effective strategy. Computer hobbyists and researchers from many
+scientific disciplines submitted a large variety of programs. One of these
+played random moves, another modeled the opponent as a Markov process to try
+to predict the next move.
+
+Despite the complicated strategies, the winner of this competition was a simple
+strategy called **tit-for-tat** that did nothing but mimic the opponent's
+last move. If the opponent cooperated with the authorities in the previous
+game, then the player chooses to cooperate this game. If the opponent defected
+in the previous game, the player would punish that with a defection of its own.
+A second competition was held and, again, tit-for-tat beat all of its
+opponents.
 
 == Finding an Optimal Strategy
 
-=== Genetic Algorithms
-TODO describe GA
+After these competitions, Axelrod wanted to create a computer program that
+automatically discovered strategies for playing the Iterated Prisoner's
+Dilemma. He decided to construct a genetic algorithm for finding these
+solutions. The most important part is encoding the solutions.
+Let's encode the easy part first, a population is a list of genomes.
 
-=== Theory
-$$\left[ \frac{e - \mathbb{E} l}{\sigma_l} \right]$$
-
-TODO why does GA work?
-
-Necessary Haskell code:
-
-> import Control.Monad
-> import Control.Monad.State
-> import Control.Monad.Writer.Strict
-> import System.Random
-> import qualified Data.Map as M
-> import Data.List
-> import Text.Printf
-
-=== Types
-
-There are two possible moves: Cooperate or Defect.
-
-> data Move = C | D deriving (Show, Eq, Bounded)
-
-This data type will be frequently used to represent a move in a two player
-game.
-
-> type MovePair = (Move, Move)
-
-TODO
-A genome stores ...
-
-> data Genome = Genome { strategy :: [Move], assumedHistory :: [MovePair] }
->             deriving (Show, Eq)
 > type Population = [Genome]
 
-For example, this strategy needs to look at the previous game to decide how
-to move. It simply repeats the opponent's last move. A history of mutual
-cooperation is assumed.
+But what is a genome? Consider the tit-for-tat strategy. It needs to store one
+previous move. In general, the entire previous **step**, that is, the previous
+move made by the opponent and the previous move made by the strategy may be
+needed. So tit-for-tat actually has four choices to make.
+These are:
+
+1. If C, C then C
+2. If C, D then D
+3. If D, C then C
+4. If D, D then D
+
+where the last element is the move tit-for-tat makes this round,
+the first element of the tuple represents the move made by the strategy
+and the second is the move made by the opponent on the previous round.
+
+The first move is a special case for this kind of strategy. The tit for tat
+strategy chooses to cooperate on the first game. So we can assume that the
+"0th" move is any move where the opponent chose to cooperate, let's make it
+C, C. This is the information we must store:
 
 > titForTat1 :: Genome
 > titForTat1 = Genome [C, D, C, D] [(C, C)]
 
-TODO
-in general
+A genome that encodes a strategy which needs to remember $n$ steps of the
+game needs a list of $2n$ moves or $n$ move pairs that it will assume were the
+previous $n$ moves and a list of $2^{2n}$ moves to make for each of the
+possible histories.
+
+> data Genome = Genome { strategy :: [Move], assumedMoves :: [GameStep] }
+>             deriving (Show, Eq)
+
+In order to facilitate crossover with strategies of any length, we can generalize
+the tit-for-tat strategy to work for any length of assumed history.
+For example, a tit-for-tat strategy that stores 2 previous steps works like this:
+
+1. if the last 2 steps were C,C and C,C then C
+2. if C,C and C,D then D
+3. if C,C and D,C then C
+4. if C,C and D,D then D
+5. if C,C and D,D then D
+6. if C,D and C,C then C
+7. if C,D and C,D then D
+
+And so on for a total of $2^{2\cdot 2} = 16$ possible moves. Mutual cooperation
+is assumed at the beginning of the game. Then tit-for-tat can be generalized
+by as a strategy of alternating Cs and Ds with an assumed history of all
+Cs:
 
 > titForTat :: Int -> Genome
-> titForTat h = undefined
+> titForTat h = Genome (take (2 ^ (2 * h)) $ cycle [C, D]) (replicate h (C, C))
 
-TODO let's define a set of competitors
-
-Some strategies from
+Let's define more strategies.
+These are inspired by lists posted on
 <https://www.bc.edu/content/dam/files/schools/cas_sites/cs/local/bach/2006/06DanielScali.pdf>
 and
-<http://www.prisoners-dilemma.com/competition.html>
+<http://www.prisoners-dilemma.com/competition.html>.
+The complement of a genome will be a useful operation in defining these.
+To find the complement of genome, find the complement of all of its moves.
+To do that, change Ds to Cs and Cs to Ds.
+
+> instance Invertible Genome where
+>   complement (Genome strat hist) = Genome (complement strat) (complement hist)
+> instance Invertible Move where
+>   complement C = D
+>   complement D = C
+
+Here is a population of genomes which need to know at least one previous step
+of the game.
 
 > defaultCompetition :: Int -> Population
-> defaultCompetition h = [allC, allD, grimTrigger, dpc
+> defaultCompetition h = let
+>   sLen = 2 ^ (2 * h)
 
- >                        , pavlov,
- >                         titForTat h, complement $ titForTat h, suspiciousTFT,
- >                         complement suspiciousTFT
+Two strategies always cooperate or always defect.
+A variant of the TFT called the Suspicious TFT defects on the first move.
+The grim trigger strategy cooperates until the opponent defects.
+The DPC strategy only defects if the opponent has not cooperated in
+the previous h moves:
 
->         ] where
->         hLen = 2 * h
->         sLen = 2 ^ hLen
->         allC = Genome (replicate sLen C) (unflattenPairs $ replicate hLen C)
->         allD = complement allC
+>   allC          = Genome (replicate sLen C) (replicate h (C,C))
+>   allD          = complement allC
+>   suspiciousTFT = (titForTat h) { assumedMoves = complement (assumedMoves
+>                                                              (titForTat h)) }
+>   grimTrigger   = allC { strategy = C : replicate (sLen - 1) D }
+>   dpc           = allC { strategy = replicate (sLen - 1) C ++ [D] }
 
-TFT but defects on first move.
+The complements of the TFT strategies are also added.
 
->         suspiciousTFT = (titForTat h) { assumedHistory = complement
->                                       $ assumedHistory (titForTat h)}
-
-Cooperation until the opponent defects.
-
->         grimTrigger = allC { strategy = C : replicate (sLen - 1) D }
-
-Cooperation if the opponent has ever cooperated.
-
-TODO FIXME
-
->         dpc = allC { strategy = replicate (sLen - 1) C ++ [D] }
-
-if(oppHistory[moveNumber-1] == myHistory[moveNumber-1]) then C
-
->         pavlov = undefined
-
-TODO some more detail
-Book-keeping.
-
-> data Statistics = Statistics
->      { mutations :: [Double], ranks :: [[Double]],
->        score :: [[Double]], cdProportion :: [[Double]] }
->      deriving (Show, Eq)
-
-> type App g = StateT g (Writer Statistics)
-
+>   in [allC, allD, grimTrigger, dpc, titForTat h, suspiciousTFT,
+>       complement suspiciousTFT, complement $ titForTat h]
 
 === Scoring
 
-TODO the scoring matrix for this game is
+The scoring matrix may be used to score the moves of the two players.
+The matrix is scanned to find the given step and the corresponding score for
+each player.
 
-> type Payoffs = [(MovePair, (Integer, Integer))]
-> defaultPayoffs :: Payoffs
-> defaultPayoffs = [ ((C, C), (3, 3))
->                  , ((C, D), (5, 0))
->                  , ((D, C), (0, 5))
->                  , ((D, D), (1, 1)) ]
-
-This matrix may be used in a straightforward way to score the moves of the two
-players.
-
-> scoreMoves :: Payoffs -> MovePair -> (Integer, Integer)
+> scoreMoves :: ScoreMatrix -> GameStep -> (Integer, Integer)
 > scoreMoves [] _ = (0, 0)
-> scoreMoves ((possibleMove, score) : payoffs) movePair =
+> scoreMoves ((possibleMove, score) : scoreMatrix) movePair =
 >   if movePair == possibleMove
->   then score else scoreMoves payoffs movePair
+>   then score else scoreMoves scoreMatrix movePair
 
-> compareGenomes :: Payoffs -> Integer -> Genome -> Genome -> (Integer, Integer)
-> compareGenomes payoffs gameLength genomeA genomeB =
-
-TODO genomes should be of length 2^(length of the genome's assumedHistory)
-
->   let toBinary :: Num n => [MovePair] -> n
+> compareGenomes :: ScoreMatrix -> Integer -> Genome -> Genome -> (Integer, Integer)
+> compareGenomes scoreMatrix gameLength genomeA genomeB =
+>   let toBinary :: Num n => [GameStep] -> n
 >       toBinary = fst . foldr (\move (b, place) ->
 >                        (if move == D then b + place else b, place * 2))
 >                  (0, 1) . flattenPairs
->       histALen = length $ assumedHistory genomeA
->       histBLen = length $ assumedHistory genomeB
+>       histALen = length $ assumedMoves genomeA
+>       histBLen = length $ assumedMoves genomeB
 
 TODO
 pick a move based on the past h moves:
@@ -154,7 +218,7 @@ for the first few moves, use the first h elements of the genome as hypothetical 
 >       scoreWithHistory histA histB =
 >         let moveA = (strategy genomeA !!) . toBinary . take histALen $ histA
 >             moveB = (strategy genomeB !!) . toBinary . take histBLen $ histB
->         in ((moveA, moveB), scoreMoves payoffs (moveA, moveB))
+>         in ((moveA, moveB), scoreMoves scoreMatrix (moveA, moveB))
 >       scoreMatch i result@((hA, hB), (sA, sB))
 >        | i >= gameLength = result
 >        | otherwise       = let (newMove, (sA', sB')) = scoreWithHistory hA hB
@@ -166,15 +230,15 @@ for the first few moves, use the first h elements of the genome as hypothetical 
 initial history and score
 
 >    in snd $ scoreMatch 0
->       ((assumedHistory genomeA, assumedHistory genomeB),
+>       ((assumedMoves genomeA, assumedMoves genomeB),
 >        (0, 0))
 
-> scoreGenome :: Payoffs -> Integer -> Population -> Genome -> Double
-> scoreGenome payoffs gameLength competition genome =
+> scoreGenome :: ScoreMatrix -> Integer -> Population -> Genome -> Double
+> scoreGenome scoreMatrix gameLength competition genome =
 
 The main player, Player A, is the first element of the tuple.
 
->   let scoreAgainst gA = fromIntegral . fst . compareGenomes payoffs gameLength gA
+>   let scoreAgainst gA = fromIntegral . fst . compareGenomes scoreMatrix gameLength gA
 >       scores = map (genome `scoreAgainst`) competition
 >   in sum scores / (fromIntegral $ length scores)
 
@@ -195,10 +259,21 @@ receive no matings. An individual may mate with itself.
 >   in [round $ ((getNum e) - mean lNum) / (stddev lNum) | e <- l]
 > replicateBy f g l = concat [replicate (f e) (g e) | e <- l]
 
+It will be useful to store the statistics of all trials using the Writer
+monad. Random numbers are easier to generate with the help of the State monad.
+
+> data Statistics = Statistics
+>      { mutations :: [Double], ranks :: [[Double]],
+>        score :: [[Double]], cdProportion :: [[Double]] }
+>      deriving (Show, Eq)
+> type App g = StateT g (Writer Statistics)
+
+The selection operator makes use of both features.
+It is defined as follows.... TODO
 
 > select :: RandomGen g => Integer -> Population -> Population -> App g [(Genome, Genome)]
 > select gameLength competition pop = do
->   let scores = zip pop $ map (scoreGenome defaultPayoffs gameLength competition) pop
+>   let scores = zip pop $ map (scoreGenome defaultScoreMatrix gameLength competition) pop
 >       ranks = zip scores (rankByStddev snd scores)
 
   TODO
@@ -265,10 +340,10 @@ TODO also use tell to report the number of mutations
 >     which <- st_ random
 >     strat' <- flipOne $ strategy g
 >     hist'  <- (return . unflattenPairs) <=< (flipOne . flattenPairs)
->             $ assumedHistory g
+>             $ assumedMoves g
 >     return $ if which
 >            then Genome (strategy g) hist'
->            else Genome strat' (assumedHistory g)
+>            else Genome strat' (assumedMoves g)
 
 > flipOne :: RandomGen g => [Move] -> App g [Move]
 > flipOne [] = return []
@@ -332,12 +407,12 @@ Finally, print statistics and results.
 
 > main = do
 >   let seed = 0
->       genLimit = 200 :: Int
->       gameLength = 150
+>       genLimit = 100 :: Int
+>       gameLength = 1000
 >       histLimit = 2
->       popLimit = 20
+>       popLimit = 50
 >       (pop, statistics) = simulateWith seed histLimit gameLength genLimit popLimit
->   mapM_ (\(genome, score) -> putStrLn $ show score ++ " " ++ showGenome genome) $ zip pop (map (scoreGenome defaultPayoffs gameLength (defaultCompetition histLimit)) pop)
+>   mapM_ (\(genome, score) -> putStrLn $ show score ++ " " ++ showGenome genome) $ zip pop (map (scoreGenome defaultScoreMatrix gameLength (defaultCompetition histLimit)) pop)
 >   putStrLn $ printf
 >           "generations: %d,  population limit: %d, seed: %d" genLimit popLimit seed
 >   putStrLn (showStatistics statistics)
@@ -347,6 +422,30 @@ Finally, print statistics and results.
 A sample run with seed set to
   TODO analyze results
 
+
+
+== Theory
+Why do genetic algorithms converge to good answers?
+For the experiments where 3 steps of history were kept there were
+about as many solutions as there are grains of sand on the earth, that is,
+$2^{70} \approx 10^{21}$ solutions and yet the GA was able to find good
+solutions in a low number of generations. The key part is that small changes in
+the genotype result in small changes in the phenotype.
+
+The tit-for-tat strategy can be classified by many patterns.
+For example, the pattern C\*C\*... where \* is any move.
+Strategies in this pattern are those that cooperate if the opponent cooperated
+on the first move.
+Another theory that helps explain the effectiveness of GAs is the building
+block hypothesis:
+
+*By processing a single genome, a genetic algorithm tries exponentially many
+genome patterns in the solution space.*
+
+GAs explore large subsets of the solution space by simultaneously analyzing
+huge numbers of patterns at a time.
+We can construct a mathematical argument as follows.
+
 == Necessary Code
 
 These functions are frequently used.
@@ -355,7 +454,7 @@ These functions are frequently used.
 > unflattenPairs (a:b:l) = (a,b) : unflattenPairs l
 > unflattenPairs _ = []
 
-=== Typeclass Instances
+=== Haskell Typeclasses
 
 How to randomly select a move.
 
@@ -369,15 +468,10 @@ Finding the complement of a genome is a useful operation.
 
 > class Invertible a where
 >   complement :: a -> a
-> instance Invertible Move where
->   complement C = D
->   complement D = C
 > instance Invertible a => Invertible [a] where
 >   complement = map complement
 > instance (Invertible a, Invertible b) => Invertible (a,b) where
 >   complement (a, b) = (complement a, complement b)
-> instance Invertible Genome where
->   complement (Genome strat hist) = Genome (complement strat) (complement hist)
 
 How to add to the statistics.
 
@@ -409,7 +503,7 @@ Pretty printing.
 Find the proportion C/D.
 
 > getProportions :: Genome -> Double
-> getProportions g = let l = strategy g ++ flattenPairs (assumedHistory g)
+> getProportions g = let l = strategy g ++ flattenPairs (assumedMoves g)
 >                        len = fromIntegral $ length l
 >                        nC = fromIntegral . length $ filter (==C) l
 >                        nD = len - nC
@@ -424,7 +518,7 @@ function.
 
 
 Shuffle a list.
-<http://okmij.org/ftp/Haskell/perfect-shuffle.txt>
+From <http://okmij.org/ftp/Haskell/perfect-shuffle.txt>
 
 > shuffle :: RandomGen g => [a] -> App g [a]
 > shuffle [] = return []
@@ -440,6 +534,7 @@ Shuffle a list.
 >           let (j, gen') = randomR (0, i) gen
 >           in ((M.insert j x . M.insert i (m M.! j)) m, gen')
 
+<!--
 TODO
 
 1. elitism
@@ -450,5 +545,4 @@ TODO
 
    illustrate crossover operation
    diagrams?
-
-
+-->

@@ -30,8 +30,8 @@
   <link rel="apple-touch-icon" sizes="152x152" href="../apple-touch-icon-152x152.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon-180x180.png" />
   <link rel="stylesheet" href="../css/normalize.css" />
-  <link rel="stylesheet" href="../css/grid.css" />
   <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/grid.css" />
   <link rel="stylesheet" href="../css/syntax.css">
   <script type="text/x-mathjax-config">
    MathJax.Hub.Config({
@@ -60,13 +60,12 @@
     <aside>
     <p><a href="../index.html"><img class="logo" src="../images/logo.png" /></a></p>
     
+    <div class="toc">
     <h2>Table of contents</h2>
-    <div class="toc"><ul>
+    <ul>
+<li><a href="#genetic-algorithms">Genetic Algorithms</a></li>
 <li><a href="#the-prisoners-dilemma">The Prisoner’s Dilemma</a></li>
 <li><a href="#finding-an-optimal-strategy">Finding an Optimal Strategy</a><ul>
-<li><a href="#genetic-algorithms">Genetic Algorithms</a></li>
-<li><a href="#theory">Theory</a></li>
-<li><a href="#types">Types</a></li>
 <li><a href="#scoring">Scoring</a><ul>
 <li><a href="#selection">Selection</a></li>
 <li><a href="#crossover">Crossover</a></li>
@@ -75,11 +74,13 @@
 <li><a href="#the-simulation">The Simulation</a></li>
 <li><a href="#results">Results</a></li>
 </ul></li>
+<li><a href="#theory">Theory</a></li>
 <li><a href="#necessary-code">Necessary Code</a><ul>
-<li><a href="#typeclass-instances">Typeclass Instances</a></li>
+<li><a href="#haskell-typeclasses">Haskell Typeclasses</a></li>
 <li><a href="#utility-functions">Utility Functions</a></li>
 </ul></li>
-</ul></div> 
+</ul>
+    </div> 
     </aside>
     </div>
 
@@ -97,95 +98,104 @@
 <i>March 13, 2016  by Hugo Rivera </i>
 </div>
 
+<h2 id="genetic-algorithms">Genetic Algorithms</h2>
+<p>A <strong>genetic algorithm</strong> is a biologically inspired way of finding the best solution to a computational problem. It works by encoding the solution to a problem as an artificial <strong>genome</strong>. The algorithm keeps a <strong>population</strong>, which is made out of many genomes. GAs are iterative algorithms, meaning they start by guessing a solution (by generating many random genomes) and then they improve that guess until a good enough solution is found or until computation time runs out. The solutions, that is, the genomes are improved in a three step process:</p>
+<ol type="1">
+<li>The genomes in the population are scored and the ones that offer the best solutions are more likely to be <strong>selected</strong> for the next step.</li>
+<li>Genomes are paired randomly for an operation called <strong>crossover</strong> where two genomes are combined to make similar genomes. This is analogous to sexual reproduction.</li>
+<li>These new genomes replace the current population. There is a chance that some of them are chosen to be <strong>mutated</strong>, that is, they are modified randomly. This can be interpreted as an insurance policy that helps keep a diverse population.</li>
+</ol>
+<p>See “Genetic Algorithms” (1992) by John Holland for a detailed description from one of the creators of this technique. I am following Melanie Mitchell’s tutorial “Genetic Algorithms: An Overview” (1995).</p>
+<p>This document is generated from a literate Haskell file, meaning this is both a computer program and an essay. Now that you know that, you should also know literate Haskell documents make friendlier computer programs than literary works so please excuse this necessary fragment of Haskell code.</p>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">import </span><span class="dt">Control.Monad</span>               ((&lt;=&lt;))
+<span class="ot">&gt;</span> <span class="kw">import </span><span class="dt">Control.Monad.State</span>         (<span class="dt">StateT</span>(..), get, put)
+<span class="ot">&gt;</span> <span class="kw">import </span><span class="dt">Control.Monad.Writer.Strict</span> (<span class="dt">Writer</span>, runWriter, tell)
+<span class="ot">&gt;</span> <span class="kw">import </span><span class="dt">Text.Printf</span>                 (printf)
+<span class="ot">&gt;</span> <span class="kw">import </span><span class="dt">System.Random</span>   (<span class="dt">Random</span>(..), <span class="dt">RandomGen</span>, randoms, next, mkStdGen)
+<span class="ot">&gt;</span> <span class="kw">import qualified</span> <span class="dt">Data.Map</span> <span class="kw">as</span> <span class="dt">M</span>     (<span class="dt">Map</span>, insert, (!), singleton, elems)</code></pre></div>
 <h2 id="the-prisoners-dilemma">The Prisoner’s Dilemma</h2>
-<p>TODO sources TODO describe the game TODO describe competition</p>
+<p>The Prisoner’s Dilemma is a two player game. Suppose two people get arrested for committing a crime together. They are brought into separate rooms and offered the choice to cooperate with the authorities by testifying against the other suspect. They know that if they both cooperate, they will be discredited and get 4 years in prison. If only one cooperates, that person will get no jail time while their partner receives 5 years. If both choose to remain silent or “defect” they will receive 1 year in prison. In this game, a step is represented by two moves: cooperation or defection.</p>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">data</span> <span class="dt">Move</span> <span class="fu">=</span> <span class="dt">C</span> <span class="fu">|</span> <span class="dt">D</span> <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>, <span class="dt">Bounded</span>)
+<span class="ot">&gt;</span> <span class="kw">type</span> <span class="dt">GameStep</span> <span class="fu">=</span> (<span class="dt">Move</span>, <span class="dt">Move</span>)</code></pre></div>
+<p>A convenient scoring system assigns high scores to low jail time; i.e. if player 1 chooses to cooperate while player 2 defects then player 1 gets 5 points and player 2 gets 0 points. This scoring system can be encoded in a matrix that reports the score of both players for every possible step of the game:</p>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">type</span> <span class="dt">ScoreMatrix</span> <span class="fu">=</span> [(<span class="dt">GameStep</span>, (<span class="dt">Integer</span>, <span class="dt">Integer</span>))]
+<span class="ot">&gt; defaultScoreMatrix ::</span> <span class="dt">ScoreMatrix</span>
+<span class="ot">&gt;</span> defaultScoreMatrix <span class="fu">=</span> [ ((<span class="dt">C</span>, <span class="dt">C</span>), (<span class="dv">1</span>, <span class="dv">1</span>))
+<span class="ot">&gt;</span>                      , ((<span class="dt">C</span>, <span class="dt">D</span>), (<span class="dv">5</span>, <span class="dv">0</span>))
+<span class="ot">&gt;</span>                      , ((<span class="dt">D</span>, <span class="dt">C</span>), (<span class="dv">0</span>, <span class="dv">5</span>))
+<span class="ot">&gt;</span>                      , ((<span class="dt">D</span>, <span class="dt">D</span>), (<span class="dv">4</span>, <span class="dv">4</span>)) ]</code></pre></div>
+<p>In the Iterated Prisoner’s dilemma this game can be played multiple times to try to achieve the highest score. Robert Axelrod had extensively studied this game when he held a competition to find the most effective strategy. Computer hobbyists and researchers from many scientific disciplines submitted a large variety of programs. One of these played random moves, another modeled the opponent as a Markov process to try to predict the next move.</p>
+<p>Despite the complicated strategies, the winner of this competition was a simple strategy called <strong>tit-for-tat</strong> that did nothing but mimic the opponent’s last move. If the opponent cooperated with the authorities in the previous game, then the player chooses to cooperate this game. If the opponent defected in the previous game, the player would punish that with a defection of its own. A second competition was held and, again, tit-for-tat beat all of its opponents.</p>
 <h2 id="finding-an-optimal-strategy">Finding an Optimal Strategy</h2>
-<h3 id="genetic-algorithms">Genetic Algorithms</h3>
-<p>TODO describe GA</p>
-<h3 id="theory">Theory</h3>
-<p><span class="math display">\[\left[ \frac{e - \mathbb{E} l}{\sigma_l} \right]\]</span></p>
-<p>TODO why does GA work?</p>
-<p>Necessary Haskell code:</p>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">import </span><span class="dt">Control.Monad</span>
-<span class="ot">&gt;</span> <span class="kw">import </span><span class="dt">Control.Monad.State</span>
-<span class="ot">&gt;</span> <span class="kw">import </span><span class="dt">Control.Monad.Writer.Strict</span>
-<span class="ot">&gt;</span> <span class="kw">import </span><span class="dt">System.Random</span>
-<span class="ot">&gt;</span> <span class="kw">import qualified</span> <span class="dt">Data.Map</span> <span class="kw">as</span> <span class="dt">M</span>
-<span class="ot">&gt;</span> <span class="kw">import </span><span class="dt">Data.List</span>
-<span class="ot">&gt;</span> <span class="kw">import </span><span class="dt">Text.Printf</span></code></pre></div>
-<h3 id="types">Types</h3>
-<p>There are two possible moves: Cooperate or Defect.</p>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">data</span> <span class="dt">Move</span> <span class="fu">=</span> <span class="dt">C</span> <span class="fu">|</span> <span class="dt">D</span> <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>, <span class="dt">Bounded</span>)</code></pre></div>
-<p>This data type will be frequently used to represent a move in a two player game.</p>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">type</span> <span class="dt">MovePair</span> <span class="fu">=</span> (<span class="dt">Move</span>, <span class="dt">Move</span>)</code></pre></div>
-<p>TODO A genome stores …</p>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">data</span> <span class="dt">Genome</span> <span class="fu">=</span> <span class="dt">Genome</span> {<span class="ot"> strategy ::</span> [<span class="dt">Move</span>],<span class="ot"> assumedHistory ::</span> [<span class="dt">MovePair</span>] }
-<span class="ot">&gt;</span>             <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>)
-<span class="ot">&gt;</span> <span class="kw">type</span> <span class="dt">Population</span> <span class="fu">=</span> [<span class="dt">Genome</span>]</code></pre></div>
-<p>For example, this strategy needs to look at the previous game to decide how to move. It simply repeats the opponent’s last move. A history of mutual cooperation is assumed.</p>
+<p>After these competitions, Axelrod wanted to create a computer program that automatically discovered strategies for playing the Iterated Prisoner’s Dilemma. He decided to construct a genetic algorithm for finding these solutions. The most important part is encoding the solutions. Let’s encode the easy part first, a population is a list of genomes.</p>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">type</span> <span class="dt">Population</span> <span class="fu">=</span> [<span class="dt">Genome</span>]</code></pre></div>
+<p>But what is a genome? Consider the tit-for-tat strategy. It needs to store one previous move. In general, the entire previous <strong>step</strong>, that is, the previous move made by the opponent and the previous move made by the strategy may be needed. So tit-for-tat actually has four choices to make. These are:</p>
+<ol type="1">
+<li>If C, C then C</li>
+<li>If C, D then D</li>
+<li>If D, C then C</li>
+<li>If D, D then D</li>
+</ol>
+<p>where the last element is the move tit-for-tat makes this round, the first element of the tuple represents the move made by the strategy and the second is the move made by the opponent on the previous round.</p>
+<p>The first move is a special case for this kind of strategy. The tit for tat strategy chooses to cooperate on the first game. So we can assume that the “0th” move is any move where the opponent chose to cooperate, let’s make it C, C. This is the information we must store:</p>
 <div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; titForTat1 ::</span> <span class="dt">Genome</span>
 <span class="ot">&gt;</span> titForTat1 <span class="fu">=</span> <span class="dt">Genome</span> [<span class="dt">C</span>, <span class="dt">D</span>, <span class="dt">C</span>, <span class="dt">D</span>] [(<span class="dt">C</span>, <span class="dt">C</span>)]</code></pre></div>
-<p>TODO in general</p>
+<p>A genome that encodes a strategy which needs to remember <span class="math inline">\(n\)</span> steps of the game needs a list of <span class="math inline">\(2n\)</span> moves or <span class="math inline">\(n\)</span> move pairs that it will assume were the previous <span class="math inline">\(n\)</span> moves and a list of <span class="math inline">\(2^{2n}\)</span> moves to make for each of the possible histories.</p>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">data</span> <span class="dt">Genome</span> <span class="fu">=</span> <span class="dt">Genome</span> {<span class="ot"> strategy ::</span> [<span class="dt">Move</span>],<span class="ot"> assumedMoves ::</span> [<span class="dt">GameStep</span>] }
+<span class="ot">&gt;</span>             <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>)</code></pre></div>
+<p>In order to facilitate crossover with strategies of any length, we can generalize the tit-for-tat strategy to work for any length of assumed history. For example, a tit-for-tat strategy that stores 2 previous steps works like this:</p>
+<ol type="1">
+<li>if the last 2 steps were C,C and C,C then C</li>
+<li>if C,C and C,D then D</li>
+<li>if C,C and D,C then C</li>
+<li>if C,C and D,D then D</li>
+<li>if C,C and D,D then D</li>
+<li>if C,D and C,C then C</li>
+<li>if C,D and C,D then D</li>
+</ol>
+<p>And so on for a total of <span class="math inline">\(2^{2\cdot 2} = 16\)</span> possible moves. Mutual cooperation is assumed at the beginning of the game. Then tit-for-tat can be generalized by as a strategy of alternating Cs and Ds with an assumed history of all Cs:</p>
 <div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; titForTat ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Genome</span>
-<span class="ot">&gt;</span> titForTat h <span class="fu">=</span> undefined</code></pre></div>
-<p>TODO let’s define a set of competitors</p>
-<p>Some strategies from <a href="https://www.bc.edu/content/dam/files/schools/cas_sites/cs/local/bach/2006/06DanielScali.pdf" class="uri">https://www.bc.edu/content/dam/files/schools/cas_sites/cs/local/bach/2006/06DanielScali.pdf</a> and <a href="http://www.prisoners-dilemma.com/competition.html" class="uri">http://www.prisoners-dilemma.com/competition.html</a></p>
+<span class="ot">&gt;</span> titForTat h <span class="fu">=</span> <span class="dt">Genome</span> (take (<span class="dv">2</span> <span class="fu">^</span> (<span class="dv">2</span> <span class="fu">*</span> h)) <span class="fu">$</span> cycle [<span class="dt">C</span>, <span class="dt">D</span>]) (replicate h (<span class="dt">C</span>, <span class="dt">C</span>))</code></pre></div>
+<p>Let’s define more strategies. These are inspired by lists posted on <a href="https://www.bc.edu/content/dam/files/schools/cas_sites/cs/local/bach/2006/06DanielScali.pdf" class="uri">https://www.bc.edu/content/dam/files/schools/cas_sites/cs/local/bach/2006/06DanielScali.pdf</a> and <a href="http://www.prisoners-dilemma.com/competition.html" class="uri">http://www.prisoners-dilemma.com/competition.html</a>. The complement of a genome will be a useful operation in defining these. To find the complement of genome, find the complement of all of its moves. To do that, change Ds to Cs and Cs to Ds.</p>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">instance</span> <span class="dt">Invertible</span> <span class="dt">Genome</span> <span class="kw">where</span>
+<span class="ot">&gt;</span>   complement (<span class="dt">Genome</span> strat hist) <span class="fu">=</span> <span class="dt">Genome</span> (complement strat) (complement hist)
+<span class="ot">&gt;</span> <span class="kw">instance</span> <span class="dt">Invertible</span> <span class="dt">Move</span> <span class="kw">where</span>
+<span class="ot">&gt;</span>   complement <span class="dt">C</span> <span class="fu">=</span> <span class="dt">D</span>
+<span class="ot">&gt;</span>   complement <span class="dt">D</span> <span class="fu">=</span> <span class="dt">C</span></code></pre></div>
+<p>Here is a population of genomes which need to know at least one previous step of the game.</p>
 <div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; defaultCompetition ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Population</span>
-<span class="ot">&gt;</span> defaultCompetition h <span class="fu">=</span> [allC, allD, grimTrigger, dpc</code></pre></div>
-<blockquote>
-<pre><code>                   , pavlov,
-                    titForTat h, complement $ titForTat h, suspiciousTFT,
-                    complement suspiciousTFT</code></pre>
-</blockquote>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span>         ] <span class="kw">where</span>
-<span class="ot">&gt;</span>         hLen <span class="fu">=</span> <span class="dv">2</span> <span class="fu">*</span> h
-<span class="ot">&gt;</span>         sLen <span class="fu">=</span> <span class="dv">2</span> <span class="fu">^</span> hLen
-<span class="ot">&gt;</span>         allC <span class="fu">=</span> <span class="dt">Genome</span> (replicate sLen <span class="dt">C</span>) (unflattenPairs <span class="fu">$</span> replicate hLen <span class="dt">C</span>)
-<span class="ot">&gt;</span>         allD <span class="fu">=</span> complement allC</code></pre></div>
-<p>TFT but defects on first move.</p>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span>         suspiciousTFT <span class="fu">=</span> (titForTat h) { assumedHistory <span class="fu">=</span> complement
-<span class="ot">&gt;</span>                                       <span class="fu">$</span> assumedHistory (titForTat h)}</code></pre></div>
-<p>Cooperation until the opponent defects.</p>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span>         grimTrigger <span class="fu">=</span> allC { strategy <span class="fu">=</span> <span class="dt">C</span> <span class="fu">:</span> replicate (sLen <span class="fu">-</span> <span class="dv">1</span>) <span class="dt">D</span> }</code></pre></div>
-<p>Cooperation if the opponent has ever cooperated.</p>
-<p>TODO FIXME</p>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span>         dpc <span class="fu">=</span> allC { strategy <span class="fu">=</span> replicate (sLen <span class="fu">-</span> <span class="dv">1</span>) <span class="dt">C</span> <span class="fu">++</span> [<span class="dt">D</span>] }</code></pre></div>
-<p>if(oppHistory[moveNumber-1] == myHistory[moveNumber-1]) then C</p>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span>         pavlov <span class="fu">=</span> undefined</code></pre></div>
-<p>TODO some more detail Book-keeping.</p>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">data</span> <span class="dt">Statistics</span> <span class="fu">=</span> <span class="dt">Statistics</span>
-<span class="ot">&gt;</span>      {<span class="ot"> mutations ::</span> [<span class="dt">Double</span>],<span class="ot"> ranks ::</span> [[<span class="dt">Double</span>]],
-<span class="ot">&gt;        score ::</span> [[<span class="dt">Double</span>]],<span class="ot"> cdProportion ::</span> [[<span class="dt">Double</span>]] }
-<span class="ot">&gt;</span>      <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>)</code></pre></div>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">type</span> <span class="dt">App</span> g <span class="fu">=</span> <span class="dt">StateT</span> g (<span class="dt">Writer</span> <span class="dt">Statistics</span>)</code></pre></div>
+<span class="ot">&gt;</span> defaultCompetition h <span class="fu">=</span> <span class="kw">let</span>
+<span class="ot">&gt;</span>   sLen <span class="fu">=</span> <span class="dv">2</span> <span class="fu">^</span> (<span class="dv">2</span> <span class="fu">*</span> h)</code></pre></div>
+<p>Two strategies always cooperate or always defect. A variant of the TFT called the Suspicious TFT defects on the first move. The grim trigger strategy cooperates until the opponent defects. The DPC strategy only defects if the opponent has not cooperated in the previous h moves:</p>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span>   allC          <span class="fu">=</span> <span class="dt">Genome</span> (replicate sLen <span class="dt">C</span>) (replicate h (<span class="dt">C</span>,<span class="dt">C</span>))
+<span class="ot">&gt;</span>   allD          <span class="fu">=</span> complement allC
+<span class="ot">&gt;</span>   suspiciousTFT <span class="fu">=</span> (titForTat h) { assumedMoves <span class="fu">=</span> complement (assumedMoves
+<span class="ot">&gt;</span>                                                              (titForTat h)) }
+<span class="ot">&gt;</span>   grimTrigger   <span class="fu">=</span> allC { strategy <span class="fu">=</span> <span class="dt">C</span> <span class="fu">:</span> replicate (sLen <span class="fu">-</span> <span class="dv">1</span>) <span class="dt">D</span> }
+<span class="ot">&gt;</span>   dpc           <span class="fu">=</span> allC { strategy <span class="fu">=</span> replicate (sLen <span class="fu">-</span> <span class="dv">1</span>) <span class="dt">C</span> <span class="fu">++</span> [<span class="dt">D</span>] }</code></pre></div>
+<p>The complements of the TFT strategies are also added.</p>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span>   <span class="kw">in</span> [allC, allD, grimTrigger, dpc, titForTat h, suspiciousTFT,
+<span class="ot">&gt;</span>       complement suspiciousTFT, complement <span class="fu">$</span> titForTat h]</code></pre></div>
 <h3 id="scoring">Scoring</h3>
-<p>TODO the scoring matrix for this game is</p>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">type</span> <span class="dt">Payoffs</span> <span class="fu">=</span> [(<span class="dt">MovePair</span>, (<span class="dt">Integer</span>, <span class="dt">Integer</span>))]
-<span class="ot">&gt; defaultPayoffs ::</span> <span class="dt">Payoffs</span>
-<span class="ot">&gt;</span> defaultPayoffs <span class="fu">=</span> [ ((<span class="dt">C</span>, <span class="dt">C</span>), (<span class="dv">3</span>, <span class="dv">3</span>))
-<span class="ot">&gt;</span>                  , ((<span class="dt">C</span>, <span class="dt">D</span>), (<span class="dv">5</span>, <span class="dv">0</span>))
-<span class="ot">&gt;</span>                  , ((<span class="dt">D</span>, <span class="dt">C</span>), (<span class="dv">0</span>, <span class="dv">5</span>))
-<span class="ot">&gt;</span>                  , ((<span class="dt">D</span>, <span class="dt">D</span>), (<span class="dv">1</span>, <span class="dv">1</span>)) ]</code></pre></div>
-<p>This matrix may be used in a straightforward way to score the moves of the two players.</p>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; scoreMoves ::</span> <span class="dt">Payoffs</span> <span class="ot">-&gt;</span> <span class="dt">MovePair</span> <span class="ot">-&gt;</span> (<span class="dt">Integer</span>, <span class="dt">Integer</span>)
+<p>The scoring matrix may be used to score the moves of the two players. The matrix is scanned to find the given step and the corresponding score for each player.</p>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; scoreMoves ::</span> <span class="dt">ScoreMatrix</span> <span class="ot">-&gt;</span> <span class="dt">GameStep</span> <span class="ot">-&gt;</span> (<span class="dt">Integer</span>, <span class="dt">Integer</span>)
 <span class="ot">&gt;</span> scoreMoves [] _ <span class="fu">=</span> (<span class="dv">0</span>, <span class="dv">0</span>)
-<span class="ot">&gt;</span> scoreMoves ((possibleMove, score) <span class="fu">:</span> payoffs) movePair <span class="fu">=</span>
+<span class="ot">&gt;</span> scoreMoves ((possibleMove, score) <span class="fu">:</span> scoreMatrix) movePair <span class="fu">=</span>
 <span class="ot">&gt;</span>   <span class="kw">if</span> movePair <span class="fu">==</span> possibleMove
-<span class="ot">&gt;</span>   <span class="kw">then</span> score <span class="kw">else</span> scoreMoves payoffs movePair</code></pre></div>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; compareGenomes ::</span> <span class="dt">Payoffs</span> <span class="ot">-&gt;</span> <span class="dt">Integer</span> <span class="ot">-&gt;</span> <span class="dt">Genome</span> <span class="ot">-&gt;</span> <span class="dt">Genome</span> <span class="ot">-&gt;</span> (<span class="dt">Integer</span>, <span class="dt">Integer</span>)
-<span class="ot">&gt;</span> compareGenomes payoffs gameLength genomeA genomeB <span class="fu">=</span></code></pre></div>
-<p>TODO genomes should be of length 2^(length of the genome’s assumedHistory)</p>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span>   <span class="kw">let</span><span class="ot"> toBinary ::</span> <span class="dt">Num</span> n <span class="ot">=&gt;</span> [<span class="dt">MovePair</span>] <span class="ot">-&gt;</span> n
+<span class="ot">&gt;</span>   <span class="kw">then</span> score <span class="kw">else</span> scoreMoves scoreMatrix movePair</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; compareGenomes ::</span> <span class="dt">ScoreMatrix</span> <span class="ot">-&gt;</span> <span class="dt">Integer</span> <span class="ot">-&gt;</span> <span class="dt">Genome</span> <span class="ot">-&gt;</span> <span class="dt">Genome</span> <span class="ot">-&gt;</span> (<span class="dt">Integer</span>, <span class="dt">Integer</span>)
+<span class="ot">&gt;</span> compareGenomes scoreMatrix gameLength genomeA genomeB <span class="fu">=</span>
+<span class="ot">&gt;</span>   <span class="kw">let</span><span class="ot"> toBinary ::</span> <span class="dt">Num</span> n <span class="ot">=&gt;</span> [<span class="dt">GameStep</span>] <span class="ot">-&gt;</span> n
 <span class="ot">&gt;</span>       toBinary <span class="fu">=</span> fst <span class="fu">.</span> foldr (\move (b, place) <span class="ot">-&gt;</span>
 <span class="ot">&gt;</span>                        (<span class="kw">if</span> move <span class="fu">==</span> <span class="dt">D</span> <span class="kw">then</span> b <span class="fu">+</span> place <span class="kw">else</span> b, place <span class="fu">*</span> <span class="dv">2</span>))
 <span class="ot">&gt;</span>                  (<span class="dv">0</span>, <span class="dv">1</span>) <span class="fu">.</span> flattenPairs
-<span class="ot">&gt;</span>       histALen <span class="fu">=</span> length <span class="fu">$</span> assumedHistory genomeA
-<span class="ot">&gt;</span>       histBLen <span class="fu">=</span> length <span class="fu">$</span> assumedHistory genomeB</code></pre></div>
+<span class="ot">&gt;</span>       histALen <span class="fu">=</span> length <span class="fu">$</span> assumedMoves genomeA
+<span class="ot">&gt;</span>       histBLen <span class="fu">=</span> length <span class="fu">$</span> assumedMoves genomeB</code></pre></div>
 <p>TODO pick a move based on the past h moves: past h moves form a binary string b pick the bth element in the genome for the first few moves, use the first h elements of the genome as hypothetical previous moves</p>
 <div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span>       scoreWithHistory histA histB <span class="fu">=</span>
 <span class="ot">&gt;</span>         <span class="kw">let</span> moveA <span class="fu">=</span> (strategy genomeA <span class="fu">!!</span>) <span class="fu">.</span> toBinary <span class="fu">.</span> take histALen <span class="fu">$</span> histA
 <span class="ot">&gt;</span>             moveB <span class="fu">=</span> (strategy genomeB <span class="fu">!!</span>) <span class="fu">.</span> toBinary <span class="fu">.</span> take histBLen <span class="fu">$</span> histB
-<span class="ot">&gt;</span>         <span class="kw">in</span> ((moveA, moveB), scoreMoves payoffs (moveA, moveB))
+<span class="ot">&gt;</span>         <span class="kw">in</span> ((moveA, moveB), scoreMoves scoreMatrix (moveA, moveB))
 <span class="ot">&gt;</span>       scoreMatch i result<span class="fu">@</span>((hA, hB), (sA, sB))
 <span class="ot">&gt;</span>        <span class="fu">|</span> i <span class="fu">&gt;=</span> gameLength <span class="fu">=</span> result
 <span class="ot">&gt;</span>        <span class="fu">|</span> otherwise       <span class="fu">=</span> <span class="kw">let</span> (newMove, (sA', sB')) <span class="fu">=</span> scoreWithHistory hA hB
@@ -193,12 +203,12 @@
 <span class="ot">&gt;</span>                                                    (sA <span class="fu">+</span> sA', sB <span class="fu">+</span> sB'))</code></pre></div>
 <p>TODO make where clause initial history and score</p>
 <div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span>    <span class="kw">in</span> snd <span class="fu">$</span> scoreMatch <span class="dv">0</span>
-<span class="ot">&gt;</span>       ((assumedHistory genomeA, assumedHistory genomeB),
+<span class="ot">&gt;</span>       ((assumedMoves genomeA, assumedMoves genomeB),
 <span class="ot">&gt;</span>        (<span class="dv">0</span>, <span class="dv">0</span>))</code></pre></div>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; scoreGenome ::</span> <span class="dt">Payoffs</span> <span class="ot">-&gt;</span> <span class="dt">Integer</span> <span class="ot">-&gt;</span> <span class="dt">Population</span> <span class="ot">-&gt;</span> <span class="dt">Genome</span> <span class="ot">-&gt;</span> <span class="dt">Double</span>
-<span class="ot">&gt;</span> scoreGenome payoffs gameLength competition genome <span class="fu">=</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; scoreGenome ::</span> <span class="dt">ScoreMatrix</span> <span class="ot">-&gt;</span> <span class="dt">Integer</span> <span class="ot">-&gt;</span> <span class="dt">Population</span> <span class="ot">-&gt;</span> <span class="dt">Genome</span> <span class="ot">-&gt;</span> <span class="dt">Double</span>
+<span class="ot">&gt;</span> scoreGenome scoreMatrix gameLength competition genome <span class="fu">=</span></code></pre></div>
 <p>The main player, Player A, is the first element of the tuple.</p>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span>   <span class="kw">let</span> scoreAgainst gA <span class="fu">=</span> fromIntegral <span class="fu">.</span> fst <span class="fu">.</span> compareGenomes payoffs gameLength gA
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span>   <span class="kw">let</span> scoreAgainst gA <span class="fu">=</span> fromIntegral <span class="fu">.</span> fst <span class="fu">.</span> compareGenomes scoreMatrix gameLength gA
 <span class="ot">&gt;</span>       scores <span class="fu">=</span> map (genome <span class="ot">`scoreAgainst`</span>) competition
 <span class="ot">&gt;</span>   <span class="kw">in</span> sum scores <span class="fu">/</span> (fromIntegral <span class="fu">$</span> length scores)</code></pre></div>
 <h4 id="selection">Selection</h4>
@@ -210,9 +220,16 @@
 <span class="ot">&gt;</span>   <span class="kw">let</span> lNum <span class="fu">=</span> map getNum l
 <span class="ot">&gt;</span>   <span class="kw">in</span> [round <span class="fu">$</span> ((getNum e) <span class="fu">-</span> mean lNum) <span class="fu">/</span> (stddev lNum) <span class="fu">|</span> e <span class="ot">&lt;-</span> l]
 <span class="ot">&gt;</span> replicateBy f g l <span class="fu">=</span> concat [replicate (f e) (g e) <span class="fu">|</span> e <span class="ot">&lt;-</span> l]</code></pre></div>
+<p>It will be useful to store the statistics of all trials using the Writer monad. Random numbers are easier to generate with the help of the State monad.</p>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">data</span> <span class="dt">Statistics</span> <span class="fu">=</span> <span class="dt">Statistics</span>
+<span class="ot">&gt;</span>      {<span class="ot"> mutations ::</span> [<span class="dt">Double</span>],<span class="ot"> ranks ::</span> [[<span class="dt">Double</span>]],
+<span class="ot">&gt;        score ::</span> [[<span class="dt">Double</span>]],<span class="ot"> cdProportion ::</span> [[<span class="dt">Double</span>]] }
+<span class="ot">&gt;</span>      <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>)
+<span class="ot">&gt;</span> <span class="kw">type</span> <span class="dt">App</span> g <span class="fu">=</span> <span class="dt">StateT</span> g (<span class="dt">Writer</span> <span class="dt">Statistics</span>)</code></pre></div>
+<p>The selection operator makes use of both features. It is defined as follows…. TODO</p>
 <div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; select ::</span> <span class="dt">RandomGen</span> g <span class="ot">=&gt;</span> <span class="dt">Integer</span> <span class="ot">-&gt;</span> <span class="dt">Population</span> <span class="ot">-&gt;</span> <span class="dt">Population</span> <span class="ot">-&gt;</span> <span class="dt">App</span> g [(<span class="dt">Genome</span>, <span class="dt">Genome</span>)]
 <span class="ot">&gt;</span> select gameLength competition pop <span class="fu">=</span> <span class="kw">do</span>
-<span class="ot">&gt;</span>   <span class="kw">let</span> scores <span class="fu">=</span> zip pop <span class="fu">$</span> map (scoreGenome defaultPayoffs gameLength competition) pop
+<span class="ot">&gt;</span>   <span class="kw">let</span> scores <span class="fu">=</span> zip pop <span class="fu">$</span> map (scoreGenome defaultScoreMatrix gameLength competition) pop
 <span class="ot">&gt;</span>       ranks <span class="fu">=</span> zip scores (rankByStddev snd scores)</code></pre></div>
 <p>TODO EXPLAIN RANKING</p>
 <div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span>       sorted <span class="fu">=</span> fst <span class="fu">.</span> unzip <span class="fu">$</span> replicateBy ((<span class="fu">+</span><span class="dv">1</span>)<span class="fu">.</span>snd) fst <span class="fu">$</span> ranks
@@ -251,10 +268,10 @@
 <span class="ot">&gt;</span>     which <span class="ot">&lt;-</span> st_ random
 <span class="ot">&gt;</span>     strat' <span class="ot">&lt;-</span> flipOne <span class="fu">$</span> strategy g
 <span class="ot">&gt;</span>     hist'  <span class="ot">&lt;-</span> (return <span class="fu">.</span> unflattenPairs) <span class="fu">&lt;=&lt;</span> (flipOne <span class="fu">.</span> flattenPairs)
-<span class="ot">&gt;</span>             <span class="fu">$</span> assumedHistory g
+<span class="ot">&gt;</span>             <span class="fu">$</span> assumedMoves g
 <span class="ot">&gt;</span>     return <span class="fu">$</span> <span class="kw">if</span> which
 <span class="ot">&gt;</span>            <span class="kw">then</span> <span class="dt">Genome</span> (strategy g) hist'
-<span class="ot">&gt;</span>            <span class="kw">else</span> <span class="dt">Genome</span> strat' (assumedHistory g)</code></pre></div>
+<span class="ot">&gt;</span>            <span class="kw">else</span> <span class="dt">Genome</span> strat' (assumedMoves g)</code></pre></div>
 <div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; flipOne ::</span> <span class="dt">RandomGen</span> g <span class="ot">=&gt;</span> [<span class="dt">Move</span>] <span class="ot">-&gt;</span> <span class="dt">App</span> g [<span class="dt">Move</span>]
 <span class="ot">&gt;</span> flipOne [] <span class="fu">=</span> return []
 <span class="ot">&gt;</span> flipOne (x<span class="fu">:</span>xs) <span class="fu">=</span> <span class="kw">do</span>
@@ -298,23 +315,28 @@
 <p>Finally, print statistics and results.</p>
 <div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> main <span class="fu">=</span> <span class="kw">do</span>
 <span class="ot">&gt;</span>   <span class="kw">let</span> seed <span class="fu">=</span> <span class="dv">0</span>
-<span class="ot">&gt;</span>       genLimit <span class="fu">=</span> <span class="dv">200</span><span class="ot"> ::</span> <span class="dt">Int</span>
-<span class="ot">&gt;</span>       gameLength <span class="fu">=</span> <span class="dv">150</span>
+<span class="ot">&gt;</span>       genLimit <span class="fu">=</span> <span class="dv">100</span><span class="ot"> ::</span> <span class="dt">Int</span>
+<span class="ot">&gt;</span>       gameLength <span class="fu">=</span> <span class="dv">1000</span>
 <span class="ot">&gt;</span>       histLimit <span class="fu">=</span> <span class="dv">2</span>
-<span class="ot">&gt;</span>       popLimit <span class="fu">=</span> <span class="dv">20</span>
+<span class="ot">&gt;</span>       popLimit <span class="fu">=</span> <span class="dv">50</span>
 <span class="ot">&gt;</span>       (pop, statistics) <span class="fu">=</span> simulateWith seed histLimit gameLength genLimit popLimit
-<span class="ot">&gt;</span>   mapM_ (\(genome, score) <span class="ot">-&gt;</span> putStrLn <span class="fu">$</span> show score <span class="fu">++</span> <span class="st">&quot; &quot;</span> <span class="fu">++</span> showGenome genome) <span class="fu">$</span> zip pop (map (scoreGenome defaultPayoffs gameLength (defaultCompetition histLimit)) pop)
+<span class="ot">&gt;</span>   mapM_ (\(genome, score) <span class="ot">-&gt;</span> putStrLn <span class="fu">$</span> show score <span class="fu">++</span> <span class="st">&quot; &quot;</span> <span class="fu">++</span> showGenome genome) <span class="fu">$</span> zip pop (map (scoreGenome defaultScoreMatrix gameLength (defaultCompetition histLimit)) pop)
 <span class="ot">&gt;</span>   putStrLn <span class="fu">$</span> printf
 <span class="ot">&gt;</span>           <span class="st">&quot;generations: %d,  population limit: %d, seed: %d&quot;</span> genLimit popLimit seed
 <span class="ot">&gt;</span>   putStrLn (showStatistics statistics)</code></pre></div>
 <h3 id="results">Results</h3>
 <p>A sample run with seed set to TODO analyze results</p>
+<h2 id="theory">Theory</h2>
+<p>Why do genetic algorithms converge to good answers? For the experiments where 3 steps of history were kept there were about as many solutions as there are grains of sand on the earth, that is, <span class="math inline">\(2^{70} \approx 10^{21}\)</span> solutions and yet the GA was able to find good solutions in a low number of generations. The key part is that small changes in the genotype result in small changes in the phenotype.</p>
+<p>The tit-for-tat strategy can be classified by many patterns. For example, the pattern C*C*… where * is any move. Strategies in this pattern are those that cooperate if the opponent cooperated on the first move. Another theory that helps explain the effectiveness of GAs is the building block hypothesis:</p>
+<p><em>By processing a single genome, a genetic algorithm tries exponentially many genome patterns in the solution space.</em></p>
+<p>GAs explore large subsets of the solution space by simultaneously analyzing huge numbers of patterns at a time. We can construct a mathematical argument as follows.</p>
 <h2 id="necessary-code">Necessary Code</h2>
 <p>These functions are frequently used.</p>
 <div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> flattenPairs <span class="fu">=</span> foldr (\(a,b) l <span class="ot">-&gt;</span> a<span class="fu">:</span>b<span class="fu">:</span>l) []
 <span class="ot">&gt;</span> unflattenPairs (a<span class="fu">:</span>b<span class="fu">:</span>l) <span class="fu">=</span> (a,b) <span class="fu">:</span> unflattenPairs l
 <span class="ot">&gt;</span> unflattenPairs _ <span class="fu">=</span> []</code></pre></div>
-<h3 id="typeclass-instances">Typeclass Instances</h3>
+<h3 id="haskell-typeclasses">Haskell Typeclasses</h3>
 <p>How to randomly select a move.</p>
 <div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">instance</span> <span class="dt">Random</span> <span class="dt">Move</span> <span class="kw">where</span>
 <span class="ot">&gt;</span>   randomR (lo, hi) g <span class="fu">=</span>
@@ -324,15 +346,10 @@
 <p>Finding the complement of a genome is a useful operation.</p>
 <div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">class</span> <span class="dt">Invertible</span> a <span class="kw">where</span>
 <span class="ot">&gt;   complement ::</span> a <span class="ot">-&gt;</span> a
-<span class="ot">&gt;</span> <span class="kw">instance</span> <span class="dt">Invertible</span> <span class="dt">Move</span> <span class="kw">where</span>
-<span class="ot">&gt;</span>   complement <span class="dt">C</span> <span class="fu">=</span> <span class="dt">D</span>
-<span class="ot">&gt;</span>   complement <span class="dt">D</span> <span class="fu">=</span> <span class="dt">C</span>
 <span class="ot">&gt;</span> <span class="kw">instance</span> <span class="dt">Invertible</span> a <span class="ot">=&gt;</span> <span class="dt">Invertible</span> [a] <span class="kw">where</span>
 <span class="ot">&gt;</span>   complement <span class="fu">=</span> map complement
 <span class="ot">&gt;</span> <span class="kw">instance</span> (<span class="dt">Invertible</span> a, <span class="dt">Invertible</span> b) <span class="ot">=&gt;</span> <span class="dt">Invertible</span> (a,b) <span class="kw">where</span>
-<span class="ot">&gt;</span>   complement (a, b) <span class="fu">=</span> (complement a, complement b)
-<span class="ot">&gt;</span> <span class="kw">instance</span> <span class="dt">Invertible</span> <span class="dt">Genome</span> <span class="kw">where</span>
-<span class="ot">&gt;</span>   complement (<span class="dt">Genome</span> strat hist) <span class="fu">=</span> <span class="dt">Genome</span> (complement strat) (complement hist)</code></pre></div>
+<span class="ot">&gt;</span>   complement (a, b) <span class="fu">=</span> (complement a, complement b)</code></pre></div>
 <p>How to add to the statistics.</p>
 <div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">instance</span> <span class="dt">Monoid</span> <span class="dt">Statistics</span> <span class="kw">where</span>
 <span class="ot">&gt;</span>   mempty <span class="fu">=</span> <span class="dt">Statistics</span> mempty mempty mempty mempty
@@ -356,7 +373,7 @@
 <span class="ot">&gt;</span>     <span class="kw">where</span> maxDouble <span class="fu">=</span> map (foldl (\e a <span class="ot">-&gt;</span> <span class="kw">if</span> e <span class="fu">&gt;</span> a <span class="kw">then</span> e <span class="kw">else</span> a) (<span class="fu">-</span>1<span class="dt">E1000</span>))</code></pre></div>
 <p>Find the proportion C/D.</p>
 <div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; getProportions ::</span> <span class="dt">Genome</span> <span class="ot">-&gt;</span> <span class="dt">Double</span>
-<span class="ot">&gt;</span> getProportions g <span class="fu">=</span> <span class="kw">let</span> l <span class="fu">=</span> strategy g <span class="fu">++</span> flattenPairs (assumedHistory g)
+<span class="ot">&gt;</span> getProportions g <span class="fu">=</span> <span class="kw">let</span> l <span class="fu">=</span> strategy g <span class="fu">++</span> flattenPairs (assumedMoves g)
 <span class="ot">&gt;</span>                        len <span class="fu">=</span> fromIntegral <span class="fu">$</span> length l
 <span class="ot">&gt;</span>                        nC <span class="fu">=</span> fromIntegral <span class="fu">.</span> length <span class="fu">$</span> filter (<span class="fu">==</span><span class="dt">C</span>) l
 <span class="ot">&gt;</span>                        nD <span class="fu">=</span> len <span class="fu">-</span> nC
@@ -365,7 +382,7 @@
 <div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; st ::</span> <span class="dt">RandomGen</span> g <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> g <span class="ot">-&gt;</span> (b, g)) <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">App</span> g b
 <span class="ot">&gt;</span> st f a <span class="fu">=</span> get <span class="fu">&gt;&gt;=</span> return <span class="fu">.</span> f a <span class="fu">&gt;&gt;=</span> \(b, g) <span class="ot">-&gt;</span> put g <span class="fu">&gt;&gt;</span> return b
 <span class="ot">&gt;</span> st_ f <span class="fu">=</span> st (const f) ()</code></pre></div>
-<p>Shuffle a list. <a href="http://okmij.org/ftp/Haskell/perfect-shuffle.txt" class="uri">http://okmij.org/ftp/Haskell/perfect-shuffle.txt</a></p>
+<p>Shuffle a list. From <a href="http://okmij.org/ftp/Haskell/perfect-shuffle.txt" class="uri">http://okmij.org/ftp/Haskell/perfect-shuffle.txt</a></p>
 <div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; shuffle ::</span> <span class="dt">RandomGen</span> g <span class="ot">=&gt;</span> [a] <span class="ot">-&gt;</span> <span class="dt">App</span> g [a]
 <span class="ot">&gt;</span> shuffle [] <span class="fu">=</span> return []
 <span class="ot">&gt;</span> shuffle l <span class="fu">=</span> <span class="kw">do</span>
@@ -379,12 +396,18 @@
 <span class="ot">&gt;</span>         fisherYatesStep (m, gen) (i, x) <span class="fu">=</span>
 <span class="ot">&gt;</span>           <span class="kw">let</span> (j, gen') <span class="fu">=</span> randomR (<span class="dv">0</span>, i) gen
 <span class="ot">&gt;</span>           <span class="kw">in</span> ((M.insert j x <span class="fu">.</span> M.insert i (m <span class="fu">M.!</span> j)) m, gen')</code></pre></div>
-<p>TODO</p>
-<ol type="1">
-<li>elitism</li>
-<li>visualize and plot modifications D3? show proportion of defect/coop over time (slideshow) highlight tit for tat strategies</li>
-</ol>
-<p>illustrate crossover operation diagrams?</p>
+<!--
+TODO
+
+1. elitism
+2. visualize and plot modifications
+   D3?
+   show proportion of defect/coop over time (slideshow)
+     highlight tit for tat strategies
+
+   illustrate crossover operation
+   diagrams?
+-->
 
 <div class="row post_links">
 <i>
