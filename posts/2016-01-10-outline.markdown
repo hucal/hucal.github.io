@@ -1,0 +1,66 @@
+---
+title: Writing
+author: Hugo Rivera
+description: A list of books.
+---
+
+Books
+-----
+1. Ancillary Justice --- hive mind fun
+1. Snow Crash --- punk sci-fi
+1. Revelation Space --- exhilarating sci-fi
+1. Rainbow's End, Radix, Tau Zero
+1. John Dies at the End
+1. Frankenstein
+1. The Remains of the Day
+1. BEOWULF
+
+Authors
+-------
+1. Haruki Murakami
+1. Sylvia Plath
+1. Kiese Laymon
+1. Mieville China
+1. Eduardo Galeano --- lyrical latin american history
+1. Richard Feynman
+
+Also, one of the factorial functions from http://www.willamette.edu/~fruehr/haskell/evolution.html
+
+~~~~~{.haskell}
+    -- the natural numbers, a la Peano
+
+    data Nat = Zero | Succ Nat
+
+
+    -- iteration and some applications
+
+    iter z s  Zero    = z
+    iter z s (Succ n) = s (iter z s n)
+
+    plus n = iter n     Succ
+    mult n = iter Zero (plus n)
+
+
+    -- primitive recursion
+
+    primrec z s  Zero    = z
+    primrec z s (Succ n) = s n (primrec z s n)
+
+
+    -- two versions of factorial
+
+    fac  = snd . iter (one, one)
+         (\(a,b) -> (Succ a, mult a b))
+    fac' = primrec one (mult . Succ)
+
+
+    -- for convenience and testing (try e.g. "fac five")
+
+    int = iter 0 (1+)
+
+    instance Show Nat where
+      show = show . int
+
+      (zero : one : two : three : four : five : _) =
+        iterate Succ Zero
+~~~~~
