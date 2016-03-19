@@ -128,9 +128,10 @@ possible histories.
 > data Genome = Genome { strategy :: [Move], assumedMoves :: [GameStep] }
 >             deriving (Show, Eq)
 
-In order to facilitate crossover with strategies of any length, we can generalize
-the tit-for-tat strategy to work for any length of assumed history.
-For example, a tit-for-tat strategy that stores 2 previous steps works like this:
+In order to facilitate the crossover of strategies of any length, we can
+generalize the tit-for-tat strategy to work for any length of assumed history.
+For example, a tit-for-tat strategy that stores 2 previous steps works like
+this:
 
 1. if the last 2 steps were C,C and C,C then C
 2. if C,C and C,D then D
@@ -200,67 +201,50 @@ each player.
 >   if movePair == possibleMove
 >   then score else scoreMoves scoreMatrix movePair
 
+To score the iterated prisoner's dilemma, a score matrix, game length and two
+genomes are needed. The game is scored by keeping track of all previous moves,
+the assumed moves are used as the initial list of previous moves and the
+score starts at 0, 0.
+
 > compareGenomes :: ScoreMatrix -> Integer -> Genome -> Genome -> (Integer, Integer)
 > compareGenomes scoreMatrix gameLength genomeA genomeB =
->   let toBinary :: Num n => [GameStep] -> n
->       toBinary = fst . foldr (\move (b, place) ->
->                        (if move == D then b + place else b, place * 2))
->                  (0, 1) . flattenPairs
->       histALen = length $ assumedMoves genomeA
->       histBLen = length $ assumedMoves genomeB
+>   snd (scoreMatch 0 ((assumedMoves genomeA, assumedMoves genomeB), (0, 0)))
+>   where
+>     scoreMatch matchNumber result@((hA, hB), (sA, sB))
+>      | matchNumber >= gameLength = result
+>      | otherwise       = let (newMove, (sA', sB')) = scoreWithHistory hA hB
+>                          in  scoreMatch (matchNumber + 1)
+>                              ((newMove:hA, newMove:hB), (sA + sA', sB + sB'))
 
-TODO
-pick a move based on the past h moves:
-past h moves form a binary string b
-pick the bth element in the genome
-for the first few moves, use the first h elements of the genome as hypothetical previous moves
+The list of previous moves is interpreted as a binary number (where Cs are 1s
+and Ds are 0s) and it is converted it into an integer. This used to index the
+genome's strategy list and get the next step of the game.
 
->       scoreWithHistory histA histB =
->         let moveA = (strategy genomeA !!) . toBinary . take histALen $ histA
->             moveB = (strategy genomeB !!) . toBinary . take histBLen $ histB
+>     hALen = length $ assumedMoves genomeA
+>     hBLen = length $ assumedMoves genomeB
+>     toBinary :: Num n => [GameStep] -> n
+>     toBinary = fst . foldr (\move (b, place) ->
+>                            (if move == D then b + place else b, place * 2))
+>                (0, 1) . flattenPairs
+>     scoreWithHistory previousMovesA previousMovesB =
+>         let moveA = strategy genomeA !! (toBinary (take hALen previousMovesA))
+>             moveB = strategy genomeB !! (toBinary (take hBLen previousMovesB))
 >         in ((moveA, moveB), scoreMoves scoreMatrix (moveA, moveB))
->       scoreMatch i result@((hA, hB), (sA, sB))
->        | i >= gameLength = result
->        | otherwise       = let (newMove, (sA', sB')) = scoreWithHistory hA hB
->                            in  scoreMatch (i + 1) ((newMove:hA, newMove:hB),
->                                                    (sA + sA', sB + sB'))
 
-  TODO
-  make where clause
-initial history and score
-
->    in snd $ scoreMatch 0
->       ((assumedMoves genomeA, assumedMoves genomeB),
->        (0, 0))
+The score of a genome is its average score in a game against every member in a
+given population.
 
 > scoreGenome :: ScoreMatrix -> Integer -> Population -> Genome -> Double
 > scoreGenome scoreMatrix gameLength competition genome =
-
-The main player, Player A, is the first element of the tuple.
-
 >   let scoreAgainst gA = fromIntegral . fst . compareGenomes scoreMatrix gameLength gA
 >       scores = map (genome `scoreAgainst`) competition
->   in sum scores / (fromIntegral $ length scores)
+>   in mean scores
 
 ==== Selection
 
-  TODO make clearer
-Mean individuals receive one mating. Individuals one standard deviation
-above the fitness level receive two matings and those below the fitness level
-receive no matings. An individual may mate with itself.
-
-> mean l = sum l / (fromIntegral $ length l)
-> stddev l = let m = mean l in sqrt $ (sum [(e - m)**2 | e <- l] ) / (fromIntegral $ length l)
-
-[(a,3),(b,2),(c,-1)] -> [a,a,a,b,b]
-
-> rankByStddev getNum l =
->   let lNum = map getNum l
->   in [round $ ((getNum e) - mean lNum) / (stddev lNum) | e <- l]
-> replicateBy f g l = concat [replicate (f e) (g e) | e <- l]
-
 It will be useful to store the statistics of all trials using the Writer
 monad. Random numbers are easier to generate with the help of the State monad.
+The selection operator makes use of both features.
 
 > data Statistics = Statistics
 >      { mutations :: [Double], ranks :: [[Double]],
@@ -268,8 +252,12 @@ monad. Random numbers are easier to generate with the help of the State monad.
 >      deriving (Show, Eq)
 > type App g = StateT g (Writer Statistics)
 
-The selection operator makes use of both features.
-It is defined as follows.... TODO
+> rankByStddev getNum l =
+>   let lNum = map getNum l
+>   in [round $ ((getNum e) - mean lNum) / (stddev lNum) | e <- l]
+> replicateBy f g l = concat [replicate (f e) (g e) | e <- l]
+
+To select which individuals are to
 
 > select :: RandomGen g => Integer -> Population -> Population -> App g [(Genome, Genome)]
 > select gameLength competition pop = do
@@ -432,19 +420,22 @@ $2^{70} \approx 10^{21}$ solutions and yet the GA was able to find good
 solutions in a low number of generations. The key part is that small changes in
 the genotype result in small changes in the phenotype.
 
-The tit-for-tat strategy can be classified by many patterns.
-For example, the pattern C\*C\*... where \* is any move.
-Strategies in this pattern are those that cooperate if the opponent cooperated
-on the first move.
-Another theory that helps explain the effectiveness of GAs is the building
-block hypothesis:
+Another theory that helps explain the effectiveness of GAs is the
+building-block hypothesis. It states that a GA works by exploring a large
+number of good building blocks of genomes.
 
-*By processing a single genome, a genetic algorithm tries exponentially many
-genome patterns in the solution space.*
+This concept is formalized in the Schema Theorem (see Holland 1992).
+A schema is a string that represents many genomes. An example schema is
+"C\*\*D". This represents all genomes that start with C and end with D.
+The \* symbol means anything can go in that position.
 
-GAs explore large subsets of the solution space by simultaneously analyzing
-huge numbers of patterns at a time.
-We can construct a mathematical argument as follows.
+A genome of length $L$ is a member of $2^L$ different schemas. For example
+the genome CC is a member of \*C, C\*, \*\*, and CC (a schema that contains
+only one genome). Then a population of size $N$ represents between $2^L$ and
+$N2^L$ different schemas. The schema theorem can be interpreted to say that
+short schmeas with above average fitness receive an exponentially increasing
+number of instances evaluated (Mitchell 1995). This interpretation makes
+assumptions that may not hold for all GAs.
 
 == Necessary Code
 
@@ -453,6 +444,9 @@ These functions are frequently used.
 > flattenPairs = foldr (\(a,b) l -> a:b:l) []
 > unflattenPairs (a:b:l) = (a,b) : unflattenPairs l
 > unflattenPairs _ = []
+
+> mean l = sum l / (fromIntegral $ length l)
+> stddev l = let m = mean l in sqrt $ (sum [(e - m)**2 | e <- l] ) / (fromIntegral $ length l)
 
 === Haskell Typeclasses
 
