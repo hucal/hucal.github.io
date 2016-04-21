@@ -265,7 +265,7 @@ To select which individuals are to
 >       ranks = zip scores (rankByStddev snd scores)
 
 <!--
-  TODO
+TODO
 EXPLAIN RANKING
 -->
 
@@ -286,10 +286,11 @@ EXPLAIN RANKING
 Individuals produce two offspring upon mating. This operation is a way of
 combining the chromosones of both genomes. It is performed randomly.
 
-<!--TODO
+<!--
+TODO
 
 one-point split both the history and the strategy
-  -->
+-->
 
 > crossover :: RandomGen g => Genome -> Genome -> App g (Genome, Genome)
 > crossover (Genome sA hA) (Genome sB hB) = do
@@ -313,7 +314,10 @@ This is a type of insurance policy against stagnation.
 > mutate :: RandomGen g => Double -> Genome -> App g Genome
 > mutate mutateProb g = do
 
-<!--TODO--!>
+<!--
+TODO
+-->
+
 Inclusive 1 to 10
 
 >   n <- (st randomR) (0,1) :: RandomGen g => App g Double
@@ -324,7 +328,9 @@ Inclusive 1 to 10
 If a mutation must occur, select whether to mutate the assumed history or the
 genome's strategy.
 
-<!--TODO also use tell to report the number of mutations--!>
+<!--
+TODO also use tell to report the number of mutations
+-->
 
 >   else do
 >     tell (mempty {mutations = [1]})
@@ -360,7 +366,10 @@ The initial population is randomly generated.
 >                            g' = Genome strat (unflattenPairs hist)
 >                        in g' : go (n - 1) (drop (nStrat + nHist) randoms)
 
-<!--  TODO clearer, less space-->
+<!--
+TODO clearer, less space
+-->
+
 To run the simulation: generate a random population of size 20 where genomes
 need 3 previous steps, run a 50 step simulation, and print the results.
 
@@ -369,7 +378,9 @@ need 3 previous steps, run a 50 step simulation, and print the results.
 >       run n pop
 >        | n <= 0 = do
 
-<!--TODO have a better tell function.... very readable-->
+<!--
+TODO have a better tell function.... very readable
+-->
 
 >            tell $ mempty { cdProportion = [map getProportions pop] }
 >            return pop
@@ -408,11 +419,13 @@ Finally, print statistics and results.
 >           "generations: %d,  population limit: %d, seed: %d" genLimit popLimit seed
 >   putStrLn (showStatistics statistics)
 
+<!--
 === Results
 
 A sample run with seed set to
   TODO analyze results
 
+-->
 
 
 == Theory
