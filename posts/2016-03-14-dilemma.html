@@ -73,7 +73,6 @@
 <li><a href="#mutation">Mutation</a></li>
 </ul></li>
 <li><a href="#the-simulation">The Simulation</a></li>
-<li><a href="#results">Results</a></li>
 </ul></li>
 <li><a href="#theory">Theory</a></li>
 <li><a href="#necessary-code">Necessary Code</a><ul>
@@ -239,7 +238,7 @@ article > p:first-of-type:first-letter {
 <span class="ot">&gt;</span>   <span class="kw">let</span> scores <span class="fu">=</span> zip pop <span class="fu">$</span> map (scoreGenome defaultScoreMatrix gameLength competition) pop
 <span class="ot">&gt;</span>       ranks <span class="fu">=</span> zip scores (rankByStddev snd scores)</code></pre></div>
 <!--
-  TODO
+TODO
 EXPLAIN RANKING
 -->
 <div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span>       sorted <span class="fu">=</span> fst <span class="fu">.</span> unzip <span class="fu">$</span> replicateBy ((<span class="fu">+</span><span class="dv">1</span>)<span class="fu">.</span>snd) fst <span class="fu">$</span> ranks
@@ -250,8 +249,11 @@ EXPLAIN RANKING
 <div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span>   return <span class="fu">$</span> zip (s1 <span class="fu">++</span> pop) (s2 <span class="fu">++</span> pop)</code></pre></div>
 <h4 id="crossover">Crossover</h4>
 <p>Individuals produce two offspring upon mating. This operation is a way of combining the chromosones of both genomes. It is performed randomly.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">!--</span><span class="dt">TODO</span></code></pre></div>
-<p>one-point split both the history and the strategy –&gt;</p>
+<!--
+TODO
+
+one-point split both the history and the strategy
+-->
 <div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; crossover ::</span> <span class="dt">RandomGen</span> g <span class="ot">=&gt;</span> <span class="dt">Genome</span> <span class="ot">-&gt;</span> <span class="dt">Genome</span> <span class="ot">-&gt;</span> <span class="dt">App</span> g (<span class="dt">Genome</span>, <span class="dt">Genome</span>)
 <span class="ot">&gt;</span> crossover (<span class="dt">Genome</span> sA hA) (<span class="dt">Genome</span> sB hB) <span class="fu">=</span> <span class="kw">do</span>
 <span class="ot">&gt;</span>   stratIx <span class="ot">&lt;-</span> (st randomR) (<span class="dv">0</span>, <span class="fu">-</span><span class="dv">1</span> <span class="fu">+</span> min (length sA) (length sB))
@@ -266,14 +268,18 @@ EXPLAIN RANKING
 <p>Mutation occurs by randomly changing a very small proportion of the C’s and D’s in either the genome’s strategy or in its assumed history. This is a type of insurance policy against stagnation.</p>
 <div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; mutate ::</span> <span class="dt">RandomGen</span> g <span class="ot">=&gt;</span> <span class="dt">Double</span> <span class="ot">-&gt;</span> <span class="dt">Genome</span> <span class="ot">-&gt;</span> <span class="dt">App</span> g <span class="dt">Genome</span>
 <span class="ot">&gt;</span> mutate mutateProb g <span class="fu">=</span> <span class="kw">do</span></code></pre></div>
-<!--TODO-->
+<!--
+TODO
+-->
 <p>Inclusive 1 to 10</p>
 <div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span>   n <span class="ot">&lt;-</span> (st randomR) (<span class="dv">0</span>,<span class="dv">1</span>)<span class="ot"> ::</span> <span class="dt">RandomGen</span> g <span class="ot">=&gt;</span> <span class="dt">App</span> g <span class="dt">Double</span>
 <span class="ot">&gt;</span>   <span class="kw">if</span> n <span class="fu">&gt;</span> mutateProb
 <span class="ot">&gt;</span>   <span class="kw">then</span> tell (mempty {mutations <span class="fu">=</span> [<span class="dv">0</span>]})
 <span class="ot">&gt;</span>     <span class="fu">&gt;&gt;</span> return g</code></pre></div>
 <p>If a mutation must occur, select whether to mutate the assumed history or the genome’s strategy.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">!--</span><span class="dt">TODO</span> also use tell to report the number <span class="kw">of</span> mutations<span class="fu">--!&gt;</span></code></pre></div>
+<!--
+TODO also use tell to report the number of mutations
+-->
 <div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span>   <span class="kw">else</span> <span class="kw">do</span>
 <span class="ot">&gt;</span>     tell (mempty {mutations <span class="fu">=</span> [<span class="dv">1</span>]})
 <span class="ot">&gt;</span>     which <span class="ot">&lt;-</span> st_ random
@@ -303,13 +309,17 @@ EXPLAIN RANKING
 <span class="ot">&gt;</span>                            strat <span class="fu">=</span> take nStrat <span class="fu">$</span> drop nHist randoms
 <span class="ot">&gt;</span>                            g' <span class="fu">=</span> <span class="dt">Genome</span> strat (unflattenPairs hist)
 <span class="ot">&gt;</span>                        <span class="kw">in</span> g' <span class="fu">:</span> go (n <span class="fu">-</span> <span class="dv">1</span>) (drop (nStrat <span class="fu">+</span> nHist) randoms)</code></pre></div>
-<!--  TODO clearer, less space-->
+<!--
+TODO clearer, less space
+-->
 <p>To run the simulation: generate a random population of size 20 where genomes need 3 previous steps, run a 50 step simulation, and print the results.</p>
 <div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> simulateWith seed histLimit gameLength genLimit popLimit <span class="fu">=</span>
 <span class="ot">&gt;</span>   <span class="kw">let</span> competition <span class="fu">=</span> defaultCompetition histLimit
 <span class="ot">&gt;</span>       run n pop
 <span class="ot">&gt;</span>        <span class="fu">|</span> n <span class="fu">&lt;=</span> <span class="dv">0</span> <span class="fu">=</span> <span class="kw">do</span></code></pre></div>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">!--</span><span class="dt">TODO</span> have a better tell function<span class="fu">....</span> very readable<span class="fu">--&gt;</span></code></pre></div>
+<!--
+TODO have a better tell function.... very readable
+-->
 <div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span>            tell <span class="fu">$</span> mempty { cdProportion <span class="fu">=</span> [map getProportions pop] }
 <span class="ot">&gt;</span>            return pop
 <span class="ot">&gt;</span>        <span class="fu">|</span> otherwise <span class="fu">=</span> <span class="kw">do</span>
@@ -336,8 +346,13 @@ EXPLAIN RANKING
 <span class="ot">&gt;</span>   putStrLn <span class="fu">$</span> printf
 <span class="ot">&gt;</span>           <span class="st">&quot;generations: %d,  population limit: %d, seed: %d&quot;</span> genLimit popLimit seed
 <span class="ot">&gt;</span>   putStrLn (showStatistics statistics)</code></pre></div>
-<h3 id="results">Results</h3>
-<p>A sample run with seed set to TODO analyze results</p>
+<!--
+=== Results
+
+A sample run with seed set to
+  TODO analyze results
+
+-->
 <h2 id="theory">Theory</h2>
 <p>Why do genetic algorithms converge to good answers? For the experiments where 3 steps of history were kept there were about as many solutions as there are grains of sand on the earth, that is, <span class="math inline">\(2^{70} \approx 10^{21}\)</span> solutions and yet the GA was able to find good solutions in a low number of generations. The key part is that small changes in the genotype result in small changes in the phenotype.</p>
 <p>Another theory that helps explain the effectiveness of GAs is the building-block hypothesis. It states that a GA works by exploring a large number of good building blocks of genomes.</p>
