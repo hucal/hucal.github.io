@@ -58,6 +58,13 @@
     </url>
 
     <url>
+        <loc>http://hucal.github.io/projects/visualize_fat_filesystem/mem.html</loc>
+        <changefreq>weekly</changefreq>
+        
+        <priority>0.8</priority>
+    </url>
+
+    <url>
         <loc>http://hucal.github.io/index.html</loc>
         <changefreq>weekly</changefreq>
         
