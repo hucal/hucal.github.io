@@ -1,0 +1,45 @@
+table {
+    border-collapse: separate;
+    border-spacing: 0;
+    border: solid #222 2px;
+    border-bottom: solid #222 1px;
+    border-top: none;
+}
+th {
+    background: #222;
+    color: white;
+    padding: 1px 10px;
+    font-size: 80%;
+}
+td {
+    padding: 5px 10px;
+}
+.highlight {
+    outline: solid 4px #85EEFF;
+    background: #222;
+    color: white;
+    font-style: italic;
+}
+tr.highlight td.address {
+    background: #85EEFF;
+}
+td.address {
+    padding-left: 2px;
+    padding-right: 2px;
+    background: #FFEF6C;
+    color: black;
+}
+.no_data {
+    color: black;
+    background: #ccc;
+}
+td.address, td.ptr, td.size, td.next {
+    text-align: center;
+    font-family: serif;
+}
+td.data {
+    font-family: monospace;
+}
+div#files p {
+    font-family: monospace;
+}
