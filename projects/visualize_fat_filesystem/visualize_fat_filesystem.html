@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<head>
+<link rel="stylesheet" href="normalize.css">
+<link rel="stylesheet" href="mem.css">
+<link rel="stylesheet" href="grid.css"/>
+<style>
+body {
+    margin: 0 auto;
+    width: 80%;
+    max-width: 60em;
+}
+</style>
+</head>
+<body>
+<h1>Visualization of Simplified FAT Filesystem</h1>
+<p>Hover over or click on entries to see pointer connections.</p>
+
+  <div id="file_descriptors">
+    <h3>File Descriptor Array</h3>
+    <div id="vis"></div>
+  </div>
+  <div id="file_table">
+    <h3>File Allocation Table</h3>
+    <div id="vis"></div>
+  </div>
+  <div id="data_region">
+    <h3>Data Region</h3>
+    <div id="vis"></div>
+  </div>
+  <div id="files">
+    <h3>Files Stored</h3>
+    <div id="vis"></div>
+  </div>
+  <textarea id="json_input" col="300" rows="5" placeholder="Enter JSON"></textarea>
+  <input type="button" value="Submit JSON" id="submit_json"></input>
+  <script src="https://d3js.org/d3.v3.min.js"></script>
+  <script src="mem.js"></script>
+</body>
