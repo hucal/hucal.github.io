@@ -1,0 +1,66 @@
+<!doctype html>
+<html class='no-js' lang='en'>
+    <head>
+        <meta charset='utf-8'>
+        <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+        <title>D3 Hive Plot, Trade Data Visualization</title>
+        <meta name='viewport' content='width=device-width, initial-scale=1'>
+
+        <link rel='apple-touch-icon' href='../../apple-touch-icon.png'>
+
+        <link rel='stylesheet' href='../../css/normalize.css'>
+        <link rel='stylesheet' href='../../css/main.css'>
+
+        <link rel='stylesheet' href='../hp_force.css'>
+        <link rel='stylesheet' href='../lasso.css'>
+        <link rel="stylesheet" href="../d3_tips.css">
+
+        <link rel='stylesheet' href='style.css'>
+        <script src='../../js/vendor/modernizr-2.8.3.min.js'></script>
+    </head>
+    <body>
+        <!--[if lt IE 8]>
+            <p class='browserupgrade'>You are using an <strong>outdated</strong> browser. Please <a href='http://browsehappy.com/'>upgrade your browser</a> to improve your experience.</p>
+        <![endif]-->
+
+    <p>Draw a lasso with the mouse or touchscreen to select multiple nodes.</p>
+
+    <div id='global_controls'>
+    <!--button id='add_hp'>Add HP</button--!>
+    <input type='checkbox' checked='checked'/> Limit data to top 30?
+    </div>
+
+    <div id='all_vis'>
+    <div id='hp_vis_container'></div>
+    </div>
+
+    <div id='elements_info'></div>
+    <header>Hugo Rivera, 2015 <a href=../../index.html>home</a></header>
+
+<!---script src='http://d3js.org/d3.v3.min.js'></script--!>
+<script src='../lib/d3.v3.js'></script>
+<script src='../lib/topojson.v1.min.js'></script>
+<script src='../lib/d3-tip.js'></script>
+<script src='../lib/colorbrewer.js'></script>
+<script src='../utilities.js'></script>
+<script src='../color_legend.js'></script>
+<script src='../hp.js'></script>
+<script src='../d3.hive.v0.dev.js'></script>
+<script src='../lib/D3-Lasso-Plugin/lasso.js'></script>
+
+<script src='trade_vis.js'></script>
+<script>
+
+hp_vis(data_man)
+    .axis_assign('by_deficit')
+    .radius_assign('by_total_exports')();
+/*    (function(dat,cc) {
+        hp_vis(data_man)
+            .axis_assign('by_deficit')
+            .radius_assign('by_total_imports')();
+    }); */
+
+
+</script>
+</body>
+</html>

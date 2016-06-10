@@ -1,0 +1,170 @@
+<!doctype html>
+<!--[if lt IE 7 ]> <html class="ie ie6 ie-lt10 ie-lt9 ie-lt8 ie-lt7 no-js"
+    lang="en"> <![endif]-->
+<!--[if IE 7 ]>    <html class="ie ie7 ie-lt10 ie-lt9 ie-lt8 no-js" lang="en">
+<![endif]-->
+<!--[if IE 8 ]>    <html class="ie ie8 ie-lt10 ie-lt9 no-js" lang="en">
+<![endif]-->
+<!--[if IE 9 ]>    <html class="ie ie9 ie-lt10 no-js" lang="en"> <![endif]-->
+<!--[if gt IE 9]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <!--HTML5 Reset: https://github.com/murtaugh/HTML5-Reset-->
+  <!-- Always force latest IE rendering engine (even in intranet) -->
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+  <title>CSE476 Overview</title>
+  <meta name="author" content="Hugo Rivera" />
+  <meta name="description" content />
+  <meta name="Copyright" content="Hugo Rivera" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="shortcut icon" href="../../favicon.ico" type="image/x-icon" />
+  <link rel="apple-touch-icon" href="../../apple-touch-icon.png" />
+  <!-- thanks to http://iconifier.net/ -->
+  <link rel="apple-touch-icon" sizes="57x57" href="../../apple-touch-icon-57x57.png" />
+  <link rel="apple-touch-icon" sizes="72x72" href="../../apple-touch-icon-72x72.png" />
+  <link rel="apple-touch-icon" sizes="76x76" href="../../apple-touch-icon-76x76.png" />
+  <link rel="apple-touch-icon" sizes="114x114" href="../../apple-touch-icon-114x114.png" />
+  <link rel="apple-touch-icon" sizes="120x120" href="../../apple-touch-icon-120x120.png" />
+  <link rel="apple-touch-icon" sizes="144x144" href="../../apple-touch-icon-144x144.png" />
+  <link rel="apple-touch-icon" sizes="152x152" href="../../apple-touch-icon-152x152.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="../../apple-touch-icon-180x180.png" />
+  <link rel="stylesheet" href="../../css/normalize.css" />
+  <link rel="stylesheet" href="../../css/style.css" />
+  <link rel="stylesheet" href="../../css/grid.css" />
+  <link rel="stylesheet" href="../../css/syntax.css">
+
+  
+</head>
+<body>
+  <header id="top">
+    <nav>
+      <div class="row heavy">
+        <div class="col"><a href="../../posts.html">Writing</a></div>
+        <div class="col"><a href="../../projects.html">Projects</a></div>
+        <div class="col logo"><a href="../../index.html">Hugo Rivera</a></div>
+        <div class="col"><a href="../../about.html">About Me</a></div>
+        <div class="col"><a href="#">...</a></div>
+      </div>
+    </nav>
+  </header>
+
+  <div class="container">
+    <div class="row">
+    <div class="col sidebar">
+    <aside>
+      <p><a href="../../index.html"><img class="logo" alt="Hugo Rivera's logo" src="../../images/logo.png" /></a></p>
+    
+
+    
+    </aside>
+    </div>
+
+    <div class="col article">
+    <article>
+      <h1>CSE476 Overview</h1>
+
+    <!--[if lt IE 8]>
+    <p class="browserupgrade">You are using an <strong>outdated</strong> browser.
+    Please <a href="http://browsehappy.com/">upgrade your browser</a>
+    to improve your experience.</p>
+    <![endif]-->
+
+    <div class="body">
+    <style>
+.trade_vis {
+    padding: 12px;
+    width: 90%;
+}
+.trade_vis, .trade_vis * {
+    background: #30352F;
+    color: #eee;
+}
+</style>
+
+<p>
+  Please be warned, I wrote these experimental visualizations when I was new to D3 and web-apps in general and have not revisited the code since then.
+</p>
+
+<h2>CSE476 Visualizations Overview</h2>
+<p>
+I've made several Hive Plot network visualizations using
+<a href="http://d3js.org">Mike Bostock's D3</a>.
+Go to <a style="text-decoration:none" href="http://hiveplot.net"><a href="http://hiveplot.net">hiveplot.net</a></a>
+for a thorough explanation or try my Bootstro.js based
+</p><p>
+<a href="hp_force.html">Hive Plot tutorial: a Hive Plot with Force Directed Layout
+</a></p>
+
+
+<div class="trade_vis">
+<h3>Trade Visualizations</h3>
+<p>Link: <a href="trade/brushed.html">Trade Visualization (Hive Panel and D3 Map)</a></p>
+
+<!-- TODO explain -->
+
+<p>Source: <a href="http://www.correlatesofwar.org/data-sets/bilateral-trade">Bilateral Trade v3.0 from the Correlates of War.</a>
+See the trade/data directory for data for every three years starting form 1870 and ending in 2008. Also helpful is this <a href="trade/Makefile">Makefile</a> and this <a href="trade/data/cow_trade_csvs_to_jsons.py">python script</a>.
+</p>
+
+</div>
+
+<h3>Linux vs E. Coli</h3>
+<p>This visualization uses the same data from Krzywinski et al. 2011
+(see <a href="http://hiveplot.net">hiveplot.net</a>), which in turn used the same data as Comparing genomes to computer operating systems ... by Yan et al. 2010</p>
+
+<p><a href="hp_ecoli_linux.html">Linux Call graph vs E Coli Gene Regulation Network (Hive Panel)
+</a>. It runs <b>very slow</b>, but that's because E. Coli has about 10,000 links and the Linux network has about 30,000 links</p>
+
+<p>Data: two JSON files
+<a href="data/linux.json">Linux</a>
+<a href="data/ecoli.json">E. Coli</a>
+parsed from the Krzywinski's DOT files.
+</p>
+
+
+
+<div class="hfill"></div>
+<a name="phd"></a>
+<h3>PhD Genealogy</h3>
+<p>Earlier in the semester I also made a few visualizations of the PhD tree of
+mathematicians dating back to Gauss. The biggest challenge was scraping the
+data off wikipedia.
+This is the visualization:
+<a href="math/vis_profs.html">Mathematical Genealogy (Circle Packing Tree Layout)</a>,
+<!--
+    while this one incorporates the location of their university or institution:
+<a href="math/vis_unis_profs.html">Mathematical Genealogy (D3 Map)</a>.
+-->
+</p>
+<p>Check out the JSON files
+<a href="data/Gauss.json">here</a> and
+<a href="data/Laplace.json">here</a>; or
+this
+<a href="data/Zygmund.json">representative file</a>.
+</p>
+
+    </div>
+
+    </article>
+    </div>
+    </div>
+
+  </div>
+
+  <footer>
+    <p id="copyright" class="heavy">Copyright 2016 Hugo Rivera</p>
+    <p id="credits">
+    <a href="https://www.haskell.org/"><img src="../../images/logo_haskell.png" alt="Haskell logo"></a>
+    <a href="https://jaspervdj.be/hakyll/"><img src="../../images/logo_hakyll.png" alt="Hakyll logo"></a>
+    <a href="http://www.gnu.org/software/emacs//"><img src="../../images/logo_emacs.png" alt="Emacs logo"></a>
+    <a href="http://www.vim.org/"><img src="../../images/logo_vim.png" alt="Vim logo"></a>
+    <a href="http://developer.mozilla.org/"><img src="../../images/logo_mdn.png" alt="MDN logo"></a>
+    <a href="http://htmldog.com/"><img src="../../images/logo_dog.gif" alt="HTMLdog logo"></a>
+    <a href="http://jigsaw.w3.org/css-validator/check/referer">
+        <img src="http://jigsaw.w3.org/css-validator/images/vcss-blue" style="width:88px" alt="Valid CSS!" />
+      </a>
+    </p>
+  </footer>
+</body>
+</html>

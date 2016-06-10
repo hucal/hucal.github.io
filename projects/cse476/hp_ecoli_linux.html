@@ -1,0 +1,398 @@
+<!doctype html>
+<!--[if lt IE 7 ]> <html class="ie ie6 ie-lt10 ie-lt9 ie-lt8 ie-lt7 no-js"
+    lang="en"> <![endif]-->
+<!--[if IE 7 ]>    <html class="ie ie7 ie-lt10 ie-lt9 ie-lt8 no-js" lang="en">
+<![endif]-->
+<!--[if IE 8 ]>    <html class="ie ie8 ie-lt10 ie-lt9 no-js" lang="en">
+<![endif]-->
+<!--[if IE 9 ]>    <html class="ie ie9 ie-lt10 no-js" lang="en"> <![endif]-->
+<!--[if gt IE 9]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <!--HTML5 Reset: https://github.com/murtaugh/HTML5-Reset-->
+  <!-- Always force latest IE rendering engine (even in intranet) -->
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+  <title>Hive Plot of E. Coli and Linux Networks</title>
+  <meta name="author" content="Hugo Rivera" />
+  <meta name="description" content />
+  <meta name="Copyright" content="Hugo Rivera" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="shortcut icon" href="../../favicon.ico" type="image/x-icon" />
+  <link rel="apple-touch-icon" href="../../apple-touch-icon.png" />
+  <!-- thanks to http://iconifier.net/ -->
+  <link rel="apple-touch-icon" sizes="57x57" href="../../apple-touch-icon-57x57.png" />
+  <link rel="apple-touch-icon" sizes="72x72" href="../../apple-touch-icon-72x72.png" />
+  <link rel="apple-touch-icon" sizes="76x76" href="../../apple-touch-icon-76x76.png" />
+  <link rel="apple-touch-icon" sizes="114x114" href="../../apple-touch-icon-114x114.png" />
+  <link rel="apple-touch-icon" sizes="120x120" href="../../apple-touch-icon-120x120.png" />
+  <link rel="apple-touch-icon" sizes="144x144" href="../../apple-touch-icon-144x144.png" />
+  <link rel="apple-touch-icon" sizes="152x152" href="../../apple-touch-icon-152x152.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="../../apple-touch-icon-180x180.png" />
+  <link rel="stylesheet" href="../../css/normalize.css" />
+  <link rel="stylesheet" href="../../css/style.css" />
+  <link rel="stylesheet" href="../../css/grid.css" />
+  <link rel="stylesheet" href="../../css/syntax.css">
+
+   <link rel="stylesheet" href="hp_force.css"> <link rel="stylesheet" href="lasso.css"> <link rel="stylesheet" href="trade/style.css"> <link rel="stylesheet" href="network.css"> <link rel="stylesheet" href="../../css/minimal_sidebar.css"> 
+</head>
+<body>
+  <header id="top">
+    <nav>
+      <div class="row heavy">
+        <div class="col"><a href="../../posts.html">Writing</a></div>
+        <div class="col"><a href="../../projects.html">Projects</a></div>
+        <div class="col logo"><a href="../../index.html">Hugo Rivera</a></div>
+        <div class="col"><a href="../../about.html">About Me</a></div>
+        <div class="col"><a href="#">...</a></div>
+      </div>
+    </nav>
+  </header>
+
+  <div class="container">
+    <div class="row">
+    <div class="col sidebar">
+    <aside>
+      <p><a href="../../index.html"><img class="logo" alt="Hugo Rivera's logo" src="../../images/logo.png" /></a></p>
+    
+
+    
+    </aside>
+    </div>
+
+    <div class="col article">
+    <article>
+      <h1>Hive Plot of E. Coli and Linux Networks</h1>
+
+    <!--[if lt IE 8]>
+    <p class="browserupgrade">You are using an <strong>outdated</strong> browser.
+    Please <a href="http://browsehappy.com/">upgrade your browser</a>
+    to improve your experience.</p>
+    <![endif]-->
+
+    <div class="body">
+    <style>
+    div#all_vis {
+        padding: 16px;
+        margin: 0 auto;
+    }
+    div.vis {
+        display:inline-block;
+        margin: 6px;
+    }
+    .axis{ stroke: #222; }
+</style>
+
+<h1>Data: E. Coli Gene Regulation Network</h1>
+<div id="all_vis"></div>
+<div id="elements_info"></div>
+
+<script src="lib/jquery-1.10.2.min.js"></script>
+<script src="lib/colorbrewer.js"></script>
+<script src="lib/d3.v3.min.js"></script>
+<script src="d3.hive.v0.dev.js"></script>
+<script src="lib/D3-Lasso-Plugin/lasso.js"></script>
+<script src="utilities.js"></script>
+<script src="hp.js"></script>
+<script src="trade/trade_vis.js"></script>
+<script>
+var config = {}, data = {};
+
+function read_data(fname, more) {
+    d3.json(fname, function (error, graph) {
+        if (error) { console.log(error); return; }
+
+        by_obj_to_ix(graph.nodes, graph.links);
+
+        graph.deg_minmax = find_degree        (graph.nodes, graph.links, true),
+        graph.nn_minmax  = find_next_neighbors(graph.nodes, graph.links),
+        graph.cc_minmax  = find_cc            (graph.nodes, graph.links);
+
+        graph.nodes[graph.deg_minmax.max].max_by_deg = true;
+        graph.nodes[graph.nn_minmax .max].max_by_nn = true;
+        //nodes[graph.cc_minmax .max] .max_by_cc = true;
+        data[fname.replace('data/', '')] = graph;
+        if (more)
+            more();
+    });
+}
+
+col_high = colorbrewer.Reds[4][2];
+col_pers = colorbrewer.Blues[4][3];
+
+// draw color legend
+var len = 96,
+    leg = d3.select('div#all_vis')
+    .append('svg')
+    .attr('class', 'legends')
+    .attr('width', len * 2)
+    .attr('height', len)
+    .selectAll('g')
+    .data([col_high, col_pers])
+  .enter().append('g')
+    .attr("class", "legend-elem")
+    .attr('transform', function(d,i){ return 'translate(' + i * len + ',10)'});
+leg.append('text')
+    .attr("class", "legend-title")
+    .text(function(d,i) { return (i === 0 ? 'non' : '') + 'persistent'; })
+leg.append('rect')
+    .style('fill', function(d){return d;})
+    .attr('y', 5)
+    .attr('height', 16)
+    .attr('width', len * 0.75)
+
+
+read_data("data/linux.json", function() {
+    mk_hp("linux.json", 0, col_high, col_pers, "#555", "by_deg_directed", "by_deg_and_group");
+    mk_hp("linux.json", 1, col_high, col_pers, "#555", "by_deg_thirds" , "by_deg_normalized");
+});
+
+read_data("data/ecoli.json", function() {
+    mk_hp("ecoli.json", 0, col_high, col_pers, "#555", "by_deg_directed", "by_deg_and_group");
+    mk_hp("ecoli.json", 1, col_high, col_pers, "#555", "by_deg_thirds" , "by_deg_normalized");
+});
+
+
+function mk_hp(fname, id_, col_high, col_persistent, col_low, axis_by, radius_by) {
+    var width = 400,
+        height = 380,
+        graph = data[fname];
+    var fname_id = fname + id_,
+        cfn = config[fname_id];
+    if (cfn === undefined) {
+        config[fname_id] = {redraw:null};
+        cfn = config[fname_id];
+        cfn.axis_by_what = "by_deg";
+        cfn.radius_by_what = "by_deg";
+    }
+    if (!(axis_by === undefined) && !(radius_by === undefined)) {
+        cfn.axis_by_what = axis_by;
+        cfn.radius_by_what = radius_by;
+    }
+
+    if (cfn.container === undefined)
+    cfn.container = d3.select("div#all_vis").append("div")
+            .attr("id", fname_id)
+            .attr("class", "vis");
+
+    cfn.redraw = function () {
+        cfn.container.select("svg").remove();
+        mk_hp(fname, id_, col_high, col_persistent, col_low);
+    }
+
+    var svg = cfn.container.append("svg")
+        .attr("width", width)
+        .attr("height", height)
+        .attr("class", "vis")
+      .append("g")
+        .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+    var hive_plot = mk_hive_plot()
+            .svg(svg)
+            .innerRadius(20)
+            .outerRadius(width/2 - 40)
+            .node_height(2)
+            .opacity(0.025)
+            .node_width (9);
+
+    cfn.angle = d3.scale.ordinal().domain(d3.range(3)).rangePoints([0, 4/3 * Math.PI]);
+    cfn.radius = d3.scale.linear().range([hive_plot.innerRadius(), hive_plot.outerRadius()])
+        .clamp(true);
+
+    var as = mk_assigners(graph.nn_minmax, graph.deg_minmax, graph.cc_minmax, cfn.radius, cfn.angle)
+
+    // add node grouping functions. segment by label
+    obj_keys(as.radius_assign).map(function(axis) {
+        as.radius_assign[axis + '_and_group'] = function(d,i) {
+            var r = cfn.radius.invert(as.radius_assign[axis](d,i)),
+                perc = 0.25;
+
+            if (d.label === "persistent")
+                return cfn.radius((1 - perc) + r * perc);
+            else
+                return cfn.radius(r * (1 - perc - 0.05));
+        }
+    })
+
+    var rng = cfn.angle.range();
+    //clone axes
+    get_cloned(cfn.axis_by_what).cloned
+        .map(function (i) { rng[i] = [rng[i], rng[i] - Math.PI/6]; });
+    get_cloned(cfn.axis_by_what).not
+        .map(function (i) { rng[i] = [rng[i]]; });
+    cfn.angle.range(rng);
+
+
+
+    function nada() {return;}
+    hive_plot
+        .angle(cfn.angle)
+        .radius(cfn.radius)
+        .nodes(graph.nodes)
+        .links(graph.links)
+        .elem_radius(as.radius_assign[cfn.radius_by_what])
+        .elem_angle(as.axis_assign[cfn.axis_by_what])
+        .elem_color(function(d, i, islink) {
+            if (islink) d = graph.nodes[d.source];
+            var col = d.label === "persistent" ? col_persistent : col_high;
+            return !islink ? col : d.max_targets ? col : col_low;
+        });
+    hive_plot();
+
+    svg.append("text")
+        .attr("class", "title")
+        .attr("y", -hive_plot.outerRadius())
+        .text(fname);
+
+    svg.selectAll("text.axis-label")
+        .data(cfn.angle.range())
+      .enter().append("text")
+        .attr("class", "axis-label")
+        .each(function(d) {
+           var a = d3.mean(d);
+           var x = (30 + hive_plot.outerRadius()) * Math.cos(a),
+               y = (30 + hive_plot.outerRadius()) * Math.sin(a);
+           d3.select(this)
+            .attr("x",x).attr("y",y)
+            .attr("transform", "rotate(" + (degrees(a) + 90) + " " + x + " " + y + ")" )
+        })
+        .attr("text-anchor", "middle")
+        .style("font-weight", "bold")
+        .text(as.axis_text[cfn.axis_by_what])
+
+
+
+    // make lasso
+    var lasso = d3.lasso();
+
+    var lasso_area = svg.append("rect")
+            .attr("x", -width/2)
+            .attr("y", -height/2)
+            .attr("width",width)
+            .attr("height",height)
+            .style("opacity",0);
+    lasso.items(svg.selectAll('rect.node'))
+        .closePathDistance(75)
+        .closePathSelect(true)
+        .hoverSelect(true)
+        .area(lasso_area)
+        .on("start",lasso_start) // lasso start function
+        .on("draw",lasso_draw) // lasso draw function
+        .on("end",lasso_end); // lasso end function
+    svg.call(lasso);
+
+
+
+    // make selectors
+    if (cfn.container.selectAll("table select")[0].length == 0) {
+        var table = cfn.container.append("table").append("tr");
+        var rad = table.append("td")
+            .attr("class", "radius_func");
+        var ax = table.append("td")
+            .attr("class", "axis_func");
+        rad.append("span").text("Radius: ");
+        ax.append("span").text("Axis: ");
+
+        ax.append("td").append("select")
+            .attr("class", "axis_func")
+            .attr("onchange", "config['" + fname_id + "'].axis_by_what=this.value; config['" + fname_id + "'].redraw();")
+            .selectAll("option")
+            .data(obj_keys(as.axis_assign))
+          .enter().append("option")
+            .attr("value", function(i) {return i;})
+            .each(function(d) { if (d === cfn.axis_by_what)
+                    d3.select(this).attr("selected", "selected"); })
+            .text(function(i) {return i.replace(/_/g, " ");});
+
+        rad.append("td").append("select")
+            .attr("onchange", "config['" + fname_id + "'].radius_by_what=this.value; config['" + fname_id + "'].redraw();")
+            .selectAll("option")
+            .data(obj_keys(as.radius_assign))
+          .enter().append("option")
+            .attr("value", function(i) {return i;})
+            .each(function(d) { if (d === cfn.radius_by_what)
+                    d3.select(this).attr("selected", "selected"); })
+            .text(function(i) {return i.replace(/_/g, " ");});
+    }
+
+    // Lasso functions to execute while lassoing
+    function lasso_start () {
+      lasso.items()
+        .classed({"not_possible":true,"selected":false}); // style as not possible
+    }
+
+    function lasso_draw () {
+        // Style the possible dots
+        lasso.items().filter(function(d) {return d.possible===true})
+            .style("stroke", "green")
+            .style("stroke-width", "3")
+          .classed({"not_possible":false,"possible":true});
+
+        // Style the not possible dot
+        lasso.items().filter(function(d) {return d.possible===false})
+            .style("stroke", "none")
+          .classed({"not_possible":true,"possible":false});
+    };
+
+    function lasso_end() {
+        var selected = [];
+        lasso.items().filter(function(d) {return d.selected===true})
+            .style("stroke", "none")
+          .each(function(d, i){selected.push(d);});
+          selected_elements(selected);
+    }
+}
+
+function selected_elements(elems) {
+    console.log(elems);
+    var ws = d3.select('div#elements_info');
+    var ws_data = ws.selectAll('.element_info')
+        // don't identify data using its list index
+        .data(elems, function(d) { return d.name; });
+
+    ws_data.exit()
+        .style('color', 'white')
+        .transition()
+        .duration(800)
+        .style('height', '12px')
+        .remove();
+
+    var ws_new = ws_data.enter()
+        .insert('div', ':first-child')
+        .attr('class', 'element_info')
+        .style('background', '#555');
+
+   ws_new.transition()
+   .duration(800)
+   .style('background', 'white');
+
+   ws_new.append('h3')
+    .text(function (d) { return d.name; });
+   ws_new.append('p')
+    .text(function (d) { return d.label; });
+}
+</script>
+
+    </div>
+
+    </article>
+    </div>
+    </div>
+
+  </div>
+
+  <footer>
+    <p id="copyright" class="heavy">Copyright 2016 Hugo Rivera</p>
+    <p id="credits">
+    <a href="https://www.haskell.org/"><img src="../../images/logo_haskell.png" alt="Haskell logo"></a>
+    <a href="https://jaspervdj.be/hakyll/"><img src="../../images/logo_hakyll.png" alt="Hakyll logo"></a>
+    <a href="http://www.gnu.org/software/emacs//"><img src="../../images/logo_emacs.png" alt="Emacs logo"></a>
+    <a href="http://www.vim.org/"><img src="../../images/logo_vim.png" alt="Vim logo"></a>
+    <a href="http://developer.mozilla.org/"><img src="../../images/logo_mdn.png" alt="MDN logo"></a>
+    <a href="http://htmldog.com/"><img src="../../images/logo_dog.gif" alt="HTMLdog logo"></a>
+    <a href="http://jigsaw.w3.org/css-validator/check/referer">
+        <img src="http://jigsaw.w3.org/css-validator/images/vcss-blue" style="width:88px" alt="Valid CSS!" />
+      </a>
+    </p>
+  </footer>
+</body>
+</html>

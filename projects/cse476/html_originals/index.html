@@ -1,0 +1,103 @@
+<!doctype html>
+<html class="no-js" lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>CSE476 Projects</title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+
+        <link rel="stylesheet" href="../css/normalize.css">
+        <link rel="stylesheet" href="../css/main.css">
+        <script src="../js/vendor/modernizr-2.8.3.min.js"></script>
+        <style>
+.trade_vis {
+    padding: 12px;
+    width: 90%;
+}
+.trade_vis, .trade_vis *, .hiveplot{
+    background: #30352F;
+    color: #eee;
+}
+.hiveplot {
+    text-decoration: none;
+    background-image: url(http://<a href=http://hiveplot.net>hiveplot.net</a>/gfx/hiveplot-logo.png);
+    background-repeat: no-repeat;
+    background-size: 24px;
+    padding: 5px;
+    padding-left: 25px;
+    -webkit-border-radius:  12.5px;
+    -moz-border-radius:     12.5px;
+    border-radius:          12.5px;
+
+}
+body {
+    min-width: 300px;
+    max-width: 900px;
+}
+
+        </style>
+
+    </head>
+    <body>
+        <!--[if lt IE 8]>
+            <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+        <![endif]-->
+        <h2>CSE476 Visualizations</h2>
+        <p>
+        I've made several <a href="http://<a href=http://hiveplot.net>hiveplot.net</a>">Hive Plot</a> network visualizations in
+        <a href="http://d3js.org">Mike Bostock's D3</a>.
+        Go to <a style="text-decoration:none" href="http://<a href=http://hiveplot.net>hiveplot.net</a>"><a href=http://hiveplot.net>hiveplot.net</a></a>
+        for a thorough explanation or try my Bootstro.js based
+        </p><p>
+        <a href="hp_force.html"><span class="hiveplot">Hive Plot tutorial</span>: a Hive Plot with Force Directed Layout
+        </a></p>
+
+
+        <div class=trade_vis>
+        <h3>Trade Visualizations</h3>
+        <p>These are two very different visualizations of the Correlates of War Trade data. I created a conventional geographic visualization and a Hive Plot based alternative. The third one is a joint visualization using both techniques.</p>
+        <p>Source: <a href=http://www.correlatesofwar.org/data-sets/bilateral-trade>Bilateral Trade v3.0 from the Correlates of War.</a>
+        See the trade/data directory for the files. Note, I only uploaded data for every three years starting form 1870 and ending in 2008. Also helpful is this <a href="trade/Makefile">Makefile</a>. It should help you download all the sources. One of these must be done manually, the cshapes data was used for historical maps.
+        Need this <a href=trade/data/cow_trade_csvs_to_jsons.py>python script</a>.</p>
+        <p><a href="trade/map.html">Trade Visualization (D3 Map)</a></p>
+        <p><a href="trade/hp.html">Trade Visualization (Hive Panel)
+        </a></p>
+        <p><a href="trade/brushed.html">Trade Visualization (Hive Panel and D3 Map)</a>
+        </p>
+        </div>
+
+        <h3>Linux vs E. Coli</h3>
+        <p>This visualization uses the same data from Krzywinski et al. 2011
+        (see <a href=http://hiveplot.net>hiveplot.net</a>), which in turn used the same data as Comparing genomes to computer operating systems ... by Yan et al. 2010</p>
+
+        <p><a href="hp_ecoli_linux.html">Linux Call graph vs E Coli Gene Regulation Network (Hive Panel)
+        </a>. It runs slow, but that's because E. Coli has about 10,000 links and the Linux network has about 30,000 links</p>
+
+        <p>Here's the <a href=data/dot/linux.dot>linux DOT</a> and the <a href=data/dot/ecoli.dot>E. Coli DOT</a> data, the same data in the less readable JSON format <a href=data/linux.json>Linux</a> <a href=data/ecoli.json>E. Coli</a>
+        and a simple <a href=data/dot/dot_to_json.hs>Haskell parser</a> to convert DOT to JSON.
+        </p>
+
+
+
+        <div class="hfill"></div>
+        <h3>PhD Genealogy</h3>
+        <p>Earlier this semester, I also made a few visualizations of the PhD tree of
+        mathematicians dating back to Gauss. The biggest challenge was scraping the
+        data off wikipedia.
+        This is the most complete one:
+        <a href="math/vis_profs.html">Mathematical Genealogy (Circle Packing Tree Layout)</a>,
+        while this one incorporates the location of their university or institution:
+        <a href="math/vis_unis_profs.html">Mathematical Genealogy (D3 Map)</a>.
+        </p>
+        <p>Check out the JSON files
+        <a href="data/Gauss.json">here</a> and
+        <a href="data/Laplace.json">here</a>; or
+        <a href="data/Zygmund.json">here</a> for a smaller file.
+        </p>
+        <header>Hugo Rivera, 2015 <a href=../index.html>home</a></header>
+
+    </body>
+</html>
