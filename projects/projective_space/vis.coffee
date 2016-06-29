@@ -1,17 +1,24 @@
 if (!Detector.webgl) then Detector.addGetWebGLMessage
 
+container = document.getElementById('vis')
+
 scene = new (THREE.Scene)
+scene.fog = new THREE.FogExp2( 0xffffff, 0.002 );
+
 camera_far = 10000
-camera = new (THREE.PerspectiveCamera)(75, window.innerWidth / window.innerHeight, 0.1, camera_far)
+camera = new (THREE.PerspectiveCamera)(75, container.offsetWidth / container.offsetHeight, 0.1, camera_far)
+
 renderer = new (THREE.WebGLRenderer)((antialias: true))
-renderer.setSize window.innerWidth / 2, window.innerHeight / 2
-renderer.setClearColor(0xffffff, 1)
-document.getElementById('vis').appendChild renderer.domElement
+renderer.setSize container.offsetWidth, container.offsetHeight
+renderer.setClearColor(scene.fog.color, 1)
+renderer.setPixelRatio(window.devicePixelRatio)
+
+container.appendChild renderer.domElement
 
 window.addEventListener('resize', () ->
-  camera.aspect = window.innerWidth / window.innerHeight
+  camera.aspect = container.offsetWidth / container.offsetHeight
   camera.updateProjectionMatrix()
-  renderer.setSize window.innerWidth / 2, window.innerHeight / 2)
+  renderer.setSize container.offsetWidth, container.offsetHeight)
 
 ## canvas for 2D shapes
 r2_canvas = document.createElement 'canvas'
@@ -32,10 +39,11 @@ canvas_draw = (ctx, obj) ->
   ctx.closePath()
 
 ### utility functions ###
+PI = Math.PI
+
 vec3 = (x, y, z) -> new (THREE.Vector3)(x, y, z)
 vec3_from_array = (p) ->
     return vec3(p[0], p[1], if p.length > 2 then p[2] else 1)
-PI = Math.PI
 
 add_to = (c, o) ->
   c.push(o)
@@ -194,24 +202,17 @@ scene.add new (THREE.HemisphereLight)(0xffffff, 0x404040, 1)
 # place camera and render
 
 controls = new (THREE.OrbitControls)(camera, renderer.domElement)
+controls.enableDamping = true
+controls.dampingFactor = 0.1
 
 camera.position.z = 2
-time = -PI * 3/4
-camera.position.y = 3 * Math.sin time
-camera.position.x = 3 * Math.cos time
-camera.lookAt(vec3(0, 0, 0))
-controls_active = true
+theta = -PI * 3/4
+camera.position.y = 3 * Math.sin theta
+camera.position.x = 3 * Math.cos theta
 
 render = ->
   requestAnimationFrame render
   renderer.render scene, camera
-  if controls_active
-    controls.update
-  else
-    time += 0.005
-    camera.position.y = 3 * Math.sin time
-    camera.position.x = 3 * Math.cos time
-    camera.lookAt(vec3(0, 0, 0))
-  return
+  controls.update()
 
 render()
