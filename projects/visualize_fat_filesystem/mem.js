@@ -23,7 +23,6 @@ sample_data = {
                         {"file_ptr": null, "cursor": 0}]
 }
 
-var minimum_rows_per_table = 15;
 var highlighted_elements = [];
 var current_data = sample_data;
 
@@ -42,10 +41,6 @@ function visualize_json(data) {
         alert("Invalid JSON.");
         return;
     }
-
-    var max_file_columns = 1;
-    var max_data_columns = 3;
-
     d3.selectAll("div#vis").selectAll("*").remove();
     highlighted_elements = [];
     current_data = data;
@@ -63,7 +58,7 @@ function visualize_json(data) {
                     }
                     return d.value;
                 }
-            }, max_file_columns);
+            });
 
     create_table("div#data_region div#vis",
             data["data_region_columns"], data["data_region"],
@@ -77,13 +72,8 @@ function visualize_json(data) {
                 if (d.column == "empty") {
                     return d.value ? "✓" : "";
                 }
-                var max_chars = 16;
-                if (d.column == "data" && d.value.length > max_chars) {
-                    return d.value.substring(0, max_chars) + "...";
-                }
                 return d.value;
-            }, max_data_columns);
-
+            });
     var fds = d3.select("div#file_descriptors div#vis")
                 .append("div")
                 .append("table")
@@ -103,11 +93,10 @@ function visualize_json(data) {
     var contents, block;
     for (var d in data["file_table"]) {
          file = data["file_table"][d];
-         if (file.ptr !== null && file.ptr >= 0) {
+         if (file.ptr !== null) {
              contents = "";
              block = data["data_region"][file.ptr];
 
-             console.log(block);
              /* read linked list of blocks */
              while (!block.empty) {
                  contents += block.data;
@@ -155,7 +144,7 @@ function valid_ptr(p) { return p !== undefined && p !== null && p >= 0; }
 
 function find_associated_elements(d) {
      var e = [d];
-     if (valid_ptr(d.next) && (d.empty === false)) {
+     if (valid_ptr(d.next)) {
          e = e.concat(find_associated_elements(current_data["data_region"][d.next]));
      }
      if (valid_ptr(d.ptr)) {
@@ -175,63 +164,53 @@ function get_classes(element) {
      return v;
 }
 
-function create_table(where, column_names, data, mk_element_text, max_columns) {
-    var rows_per_table = Math.max(minimum_rows_per_table, Math.ceil(data.length / max_columns));
-    var rows_written = 0;
+function create_table(where, column_names, data, mk_element_text) {
+    var table = d3.select(where)
+    .append("table");
 
-    where = d3.select(where).append("div").attr("class", "row");
+    var thead = table.append("thead");
+    var tbody = table.append("tbody");
 
-    while (rows_written < data.length) {
-        var current_data = data.slice(rows_written, rows_written + rows_per_table);
-        console.log(current_data);
-        rows_written += current_data.length;
-        var table = where.append("div").attr("class", "col").append("table");
+    thead.append("tr")
+    .selectAll("th")
+    .data(column_names)
+    .enter()
+    .append("th")
+    .attr("class", function(d) {
+        return get_classes(this) + " " + d;
+    })
+    .text(function (d) {return d == "address" ? "" : d;});
 
-        var thead = table.append("thead");
-        var tbody = table.append("tbody");
+    var rows = tbody.selectAll("tr")
+    .data(data)
+    .enter()
+    .append("tr")
+    .each(function (d) { d.doc_element = this; })
+    .on("click", highlight_all)
+    .on("mouseover", highlight_all)
+    .attr("class", function(r) {
+        return get_classes(this) + " " +
+        ((r.empty === true || r.ptr === null) ? "no_data" : "");
+    });
 
-        thead.append("tr")
-            .selectAll("th")
-            .data(column_names)
-            .enter()
-            .append("th")
-            .attr("class", function(d) {
-                return get_classes(this) + " " + d;
-            })
-            .text(function (d) {return d == "address" ? "" : d;});
-
-        var rows = tbody.selectAll("tr")
-            .data(current_data)
-            .enter()
-            .append("tr")
-            .each(function (d) { d.doc_element = this; })
-                .on("click", highlight_all)
-            .on("mouseover", highlight_all)
-            .attr("class", function(r) {
-                return get_classes(this) + " " +
-                    ((r.empty === true || r.ptr === null) ? "no_data" : "");
-            });
-
-        var cells = rows.selectAll("td")
-            .data(function(row, i) {
-                d = [{column: "address",
-                      value: i + rows_written - current_data.length,
-                      row: row}];
-                for (var col in column_names) {
-                    col = column_names[col];
-                    if (col == "address") {
-                        continue;
-                    }
-                    d.push({column: col, value: row[col], row: row});
+    var cells = rows.selectAll("td")
+    .data(function(row, i) {
+            data = [{column: "address", value: i, row: row}];
+            for (var col in column_names) {
+                col = column_names[col];
+                if (col == "address") {
+                    continue;
                 }
-                return d;
-            })
-            .enter()
-            .append("td")
-            .attr("class", function(d) {
-                return get_classes(this) + " " + d.column;
-            })
-            .html(mk_element_text);
-    }
+                data.push({column: col, value: row[col], row: row});
+            }
+            return data;
+        }
+    )
+    .enter()
+    .append("td")
+    .attr("class", function(d) {
+        return get_classes(this) + " " + d.column;
+    })
+    .html(mk_element_text);
 }
 

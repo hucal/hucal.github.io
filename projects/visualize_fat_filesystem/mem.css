@@ -38,16 +38,8 @@ td.address, td.ptr, td.size, td.next {
     font-family: serif;
 }
 td.data {
-    max-width: 11em;
-    max-height: 4em;
-    overflow: hidden;
     font-family: monospace;
 }
 div#files p {
     font-family: monospace;
-}
-
-/* Responsive style. */
-@media only screen and (min-width: 50em) {
-    div#data_region .col { width: 33%;  } /* 100 / max tables */
 }

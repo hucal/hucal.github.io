@@ -9,7 +9,49 @@
     </url>
 
     <url>
+        <loc>http://hucal.github.io/projects/cse476/hp_ecoli_linux.html</loc>
+        <changefreq>weekly</changefreq>
+        
+        <priority>0.8</priority>
+    </url>
+
+    <url>
+        <loc>http://hucal.github.io/projects/cse476/hp_force.html</loc>
+        <changefreq>weekly</changefreq>
+        
+        <priority>0.8</priority>
+    </url>
+
+    <url>
+        <loc>http://hucal.github.io/projects/cse476/index.html</loc>
+        <changefreq>weekly</changefreq>
+        
+        <priority>0.8</priority>
+    </url>
+
+    <url>
+        <loc>http://hucal.github.io/projects/cse476/math/vis_profs.html</loc>
+        <changefreq>weekly</changefreq>
+        
+        <priority>0.8</priority>
+    </url>
+
+    <url>
+        <loc>http://hucal.github.io/projects/cse476/trade/brushed.html</loc>
+        <changefreq>weekly</changefreq>
+        
+        <priority>0.8</priority>
+    </url>
+
+    <url>
         <loc>http://hucal.github.io/projects/periodic/index.html</loc>
+        <changefreq>weekly</changefreq>
+        
+        <priority>0.8</priority>
+    </url>
+
+    <url>
+        <loc>http://hucal.github.io/projects/projective_space/index.html</loc>
         <changefreq>weekly</changefreq>
         
         <priority>0.8</priority>
