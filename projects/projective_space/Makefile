@@ -1,16 +1,21 @@
-NAME=vis
+SOURCES=vis util
 OUT=js
 
-all: compile compress
+all: compile compress html
 
 compress: compile
 	# Minify the resulting javascript
 	cd $(OUT) ; \
-	uglifyjs --screw-ie8 \
-	    --in-source-map $(NAME).js.map \
-	    --source-map $(NAME).min.js.map \
-	    -mco $(NAME).min.js -- $(NAME).js
+	$(foreach F, $(SOURCES), uglifyjs --screw-ie8 \
+	    --in-source-map $(F).js.map \
+	    --source-map $(F).min.js.map \
+	    -mco $(F).min.js -- $(F).js ; )
 
 compile:
 	# Generate source map in OUT and compile the coffee
-	coffee --bare -mo $(OUT) -c $(NAME).coffee
+	$(foreach F, $(SOURCES), coffee --bare -mo $(OUT) -c $(F).coffee ; )
+
+
+html:
+	pandoc article.markdown --mathjax -o article.html
+	cat metadata vis.html article.html tail.html > index.hakyll.html

@@ -4,3 +4,12 @@ div#vis {
     height: 75%;
     width: 100%
 }
+input.num_input {
+  width: 48px;
+}
+table td {
+  width: auto;
+}
+table.palette td:first-child {
+  text-align: right;
+}
