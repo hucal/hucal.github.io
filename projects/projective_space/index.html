@@ -33,7 +33,8 @@
   <link rel="stylesheet" href="../../css/style.css" />
   <link rel="stylesheet" href="../../css/grid.css" />
   <link rel="stylesheet" href="../../css/syntax.css">
-  <link rel="stylesheet" type="text/css" href="./style.css">
+
+  
 </head>
 <body>
   <header id="top">
@@ -70,101 +71,104 @@
     <![endif]-->
 
     <div class="body">
+    <link rel="stylesheet" type="text/css" href="./style.css">
 
-<div id='vis'></div>
-<label><input id='show_r2' type='checkbox'>Show R2</label>
-<label><input id='show_s2' type='checkbox'>Show S2</label>
-<label><input id='show_r3' type='checkbox'>Show R3</label>
+<div id="vis"></div>
+<label><input id="show_r2" type="checkbox">Show R2</label>
+<label><input id="show_s2" type="checkbox">Show S2</label>
+<label><input id="show_r3" type="checkbox">Show R3</label>
 
+<div class="vis-ui">
 <table>
 <tr>
-<td><input class='num_input' value=1 id='trans_11' type='number' step=0.1></td>
-<td><input class='num_input' value=0 id='trans_12' type='number' step=0.1></td>
-<td><input class='num_input' value=0 id='trans_13' type='number' step=0.1></td>
+<td><input class="num_input" value="1" id="trans_11" type="number" step="0.1"></td>
+<td><input class="num_input" value="0" id="trans_12" type="number" step="0.1"></td>
+<td><input class="num_input" value="0" id="trans_13" type="number" step="0.1"></td>
 <td>
-  <button id='apply_identity'>Apply identity (preview)</button>
+  <button id="apply_identity">Apply identity (preview)</button>
 </td>
 </tr>
 <tr>
-<td><input class='num_input' value=0 id='trans_21' type='number' step=0.1></td>
-<td><input class='num_input' value=1 id='trans_22' type='number' step=0.1></td>
-<td><input class='num_input' value=0 id='trans_23' type='number' step=0.1></td>
+<td><input class="num_input" value="0" id="trans_21" type="number" step="0.1"></td>
+<td><input class="num_input" value="1" id="trans_22" type="number" step="0.1"></td>
+<td><input class="num_input" value="0" id="trans_23" type="number" step="0.1"></td>
 <td>
-  <button id='apply_trans'>Apply transformation</button>
+  <button id="apply_trans">Apply transformation</button>
 </td>
 </tr>
 <tr>
-<td><input class='num_input' value=0 id='trans_31' type='number' step=0.1></td>
-<td><input class='num_input' value=0 id='trans_32' type='number' step=0.1></td>
-<td><input class='num_input' value=1 id='trans_33' type='number' step=0.1></td>
+<td><input class="num_input" value="0" id="trans_31" type="number" step="0.1"></td>
+<td><input class="num_input" value="0" id="trans_32" type="number" step="0.1"></td>
+<td><input class="num_input" value="1" id="trans_33" type="number" step="0.1"></td>
 <td>
-  <!--button id='apply_trans_plane'>Apply transformation (move plane)</button--!>
+  <!--button id='apply_trans_plane'>Apply transformation (move plane)</button-->
 </td>
 </tr>
 </table>
 
-<table class='palette'>
+<table class="palette">
 <tr>
 <td>
-  <button id='create_sim'>Create similarity</button>
+  <button id="create_sim">Create similarity</button>
 </td>
 <td>
-<label><input id='sim_reflection' type='checkbox'>Reflection?</label>
+<label><input id="sim_reflection" type="checkbox">Reflection?</label>
 </td>
 <td>
- s: <input class='num_input' value=1 id='sim_s' type='number' step=0.1>
- theta: <input class='num_input' value=0 id='sim_theta' type='number' step=0.1>
- t_x: <input class='num_input' value=0 id='sim_tx' type='number' step=0.1>
- t_y: <input class='num_input' value=0 id='sim_ty' type='number' step=0.1>
+ s: <input class="num_input" value="1" id="sim_s" type="number" step="0.1">
+ theta: <input class="num_input" value="0" id="sim_theta" type="number" step="0.1">
+ t_x: <input class="num_input" value="0" id="sim_tx" type="number" step="0.1">
+ t_y: <input class="num_input" value="0" id="sim_ty" type="number" step="0.1">
 </td>
 <tr>
 <td>
-  <button id='create_aff'>Create affine</button>
+  <button id="create_aff">Create affine</button>
 </td>
 <td>
-<label><input id='aff_reflection' type='checkbox'>Reflection?</label>
+<label><input id="aff_reflection" type="checkbox">Reflection?</label>
 </td>
 <td>
- theta: <input class='num_input' value=0 id='aff_theta' type='number' step=0.1>
- phi: <input class='num_input' value=0 id='aff_phi' type='number' step=0.1>
- lambda_1: <input class='num_input' value=1 id='aff_l1' type='number' step=0.1>
- lambda_2: <input class='num_input' value=1 id='aff_l2' type='number' step=0.1>
- t_x: <input class='num_input' value=0 id='aff_tx' type='number' step=0.1>
- t_y: <input class='num_input' value=0 id='aff_ty' type='number' step=0.1>
+ theta: <input class="num_input" value="0" id="aff_theta" type="number" step="0.1">
+ phi: <input class="num_input" value="0" id="aff_phi" type="number" step="0.1">
+ lambda_1: <input class="num_input" value="1" id="aff_l1" type="number" step="0.1">
+ lambda_2: <input class="num_input" value="1" id="aff_l2" type="number" step="0.1">
+ t_x: <input class="num_input" value="0" id="aff_tx" type="number" step="0.1">
+ t_y: <input class="num_input" value="0" id="aff_ty" type="number" step="0.1">
 </td>
 </tr>
 <tr>
 <td>
-  <button id='add_point'>Add point</button></td>
+  <button id="add_point">Add point</button></td>
 </td>
 </td>
 <td>
 <td>
- x: <input class='num_input' value=0 id='point_x' type='number' step=0.1>
- y: <input class='num_input' value=0 id='point_y' type='number' step=0.1>
-</td>
-</tr>
-<tr>
-<td>
-  <button id='add_line'>Add line</button></td>
-</td>
-</td>
-<td>
-<td>
-  <input class='num_input' value=1 id='line_a' type='number' step=0.1> * x +
-  <input class='num_input' value=1 id='line_b' type='number' step=0.1> * y +
-  <input class='num_input' value=0 id='line_c' type='number' step=0.1> = 0
+ x: <input class="num_input" value="0" id="point_x" type="number" step="0.1">
+ y: <input class="num_input" value="0" id="point_y" type="number" step="0.1">
 </td>
 </tr>
 <tr>
 <td>
-  <button id='clear_all'>Clear all</button>
+  <button id="add_line">Add line</button></td>
+</td>
 </td>
 <td>
-  <button id='create_identity'>Create identity</button>
+<td>
+  <input class="num_input" value="1" id="line_a" type="number" step="0.1"> * x +
+  <input class="num_input" value="1" id="line_b" type="number" step="0.1"> * y +
+  <input class="num_input" value="0" id="line_c" type="number" step="0.1"> = 0
+</td>
+</tr>
+<tr>
+<td>
+  <button id="clear_all">Clear all</button>
+</td>
+<td>
+  <button id="create_identity">Create identity</button>
 </td>
 </tr>
 </table>
+</div>
 
 <p>Angles theta and phi are in degrees. The grid is from (-2, -2) to (2, 2).</p>
 
@@ -177,14 +181,65 @@
 <script src="js/vis.min.js"></script>
 
 
+<!--
+TODO conic pics (plane+conic & example plots)
+TODO describe the vis
+TODO more easy-to-load vis examples
+TODO line, point pics from vis
+TODO finish math sections
+-->
 <h2 id="homogeneous-coordinates">Homogeneous Coordinates</h2>
 <h3 id="lines-and-points">Lines and Points</h3>
 <p>A line can be represented as</p>
 <p><span class="math display">\[ L = \{ (x,y) \in \mathbb{R}^2 | ax + by + c = 0 \} \]</span></p>
-<p>In slope-intercept form, this is <span class="math inline">\(y = -(a + c)/b\)</span>. Using homogeneous coordinates, this line is represented using a scale independent vector.</p>
+<p>In slope-intercept form, this is <span class="math inline">\(y = -(a + c)/b\)</span>. Using homogeneous coordinates, this line is represented using a scale independent vector:</p>
 <p><span class="math display">\[ l = \begin{pmatrix} ka \\ kb \\ kc \end{pmatrix}, \quad \forall k \in \mathbb{R} \]</span></p>
 <p>Clearly, a point lies on this line if the dot product of <span class="math inline">\((x,y,1)\)</span> and the vector is zero.</p>
 <p><span class="math display">\[ L = \{ (x,y,1) \in \mathbb{R}^2 | (x,y,1) \cdot (a,b,c) = 0 \} \]</span></p>
+<h3 id="example-lines">Example lines</h3>
+<p>These coordinates can represent any line on <span class="math inline">\(\mathbb{R}^2\)</span>. Here are some examples:</p>
+<table>
+<thead>
+<tr class="header">
+<th>Vector representation</th>
+<th>Slope-Intercept form</th>
+<th>Points</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span class="math inline">\((1, 1, 1)\)</span></td>
+<td><span class="math inline">\(y = -x - 1\)</span></td>
+<td><span class="math inline">\((0, -1, 1), (-1, 0, 1), (2, -3, 1)\)</span></td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\((3, 5, -10)\)</span></td>
+<td><span class="math inline">\(y = -3x/5 + 2\)</span></td>
+<td><span class="math inline">\((0, 2, 1), (10/3, 0, 1), (5, -1, 1)\)</span></td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">\((-2, 3, 0)\)</span></td>
+<td><span class="math inline">\(y = 2x/3\)</span></td>
+<td><span class="math inline">\((0, 0, 1), (1, 2/3, 1)\)</span></td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\((0, 1, 1)\)</span></td>
+<td><span class="math inline">\(y = -1\)</span></td>
+<td><span class="math inline">\((k, -1, 1) \, \forall k\in \mathbb{R}\)</span></td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">\((0, 0, 0)\)</span></td>
+<td></td>
+<td><span class="math inline">\(\mathbb{R}^2\)</span></td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\((0, 0, k) \quad k \neq 0\)</span></td>
+<td>?</td>
+<td><span class="math inline">\((m, n, 0) \, \forall m, n\in \mathbb{R}\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>The last example is known as the line at infinity and is populated by ideal points. These are described later.</p>
 <h3 id="intersections">Intersections</h3>
 <p>To find a point that cross two lines <span class="math inline">\(l_1, l_2\)</span>, we need a vector that is orthogonal to both. The point <span class="math inline">\(p = l_1 \times l_2\)</span> suits this requirement. For example, the two lines</p>
 <p><span class="math display">\[L_1 = \{ y = x + 1 \} \qquad L_2 = \{y = -x + 1\}\]</span></p>
@@ -193,53 +248,52 @@
 <p>Their cross product is <span class="math inline">\(l_1 \times l_2 = (0, -2, -2)^T\)</span>, this vector is equivalent to <span class="math inline">\((0, 1, 1)^T\)</span>, which represents the point <span class="math inline">\((0, 1)^T\)</span> as expected.</p>
 <p>Similarly, to find the line that passes between two points <span class="math inline">\(p_1, p_2\)</span> we can take their cross product <span class="math inline">\(l = p_1 \times p_2\)</span>.</p>
 <p>An important thing to note is the dual nature of these two properties. Any property of lines can be written as a property of points.</p>
-<h3 id="examples">Examples</h3>
-<p>These coordinates can represent any line on <span class="math inline">\(\mathbb{R}^2\)</span>. Here are some examples:</p>
-<table>
+<h3 id="example-intersections">Example Intersections</h3>
+<table style="width:92%;">
+<colgroup>
+<col width="31%" />
+<col width="59%" />
+</colgroup>
 <thead>
 <tr class="header">
-<th>Example #</th>
-<th>Vector representation</th>
-<th>Slope-Intercept form</th>
-<th>Points</th>
+<th>Slope-intercept form</th>
+<th>Intersection point</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td>1.</td>
-<td><span class="math inline">\((1, 1, 1)\)</span></td>
-<td><span class="math inline">\(y = -x - 1\)</span></td>
-<td><span class="math inline">\((0, -1, 1), (-1, 0, 1), (2, -3, 1)\)</span></td>
+<td><span class="math inline">\(x = 1, \, y = 1\)</span></td>
+<td><span class="math inline">\((-1, 0, 1) \times (0, 1, -1) = (1, 1, 1)\)</span></td>
 </tr>
 <tr class="even">
-<td>2.</td>
-<td><span class="math inline">\((3, 5, -10)\)</span></td>
-<td><span class="math inline">\(y = -3x/5 + 2\)</span></td>
-<td><span class="math inline">\((0, 2, 1), (10/3, 0, 1), (5, -1, 1)\)</span></td>
+<td><span class="math inline">\(y = -3x/5 + 2, \, y = -x -1\)</span></td>
+<td><span class="math inline">\((3, 5, -10) \times (1, 1, 1) = (-15/2, 13/2, 1)\)</span></td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr class="header">
+<th>Points</th>
+<th>Line</th>
+<th>Line in slope-intercept form</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span class="math inline">\((0, 1, 1), \, (1, 0, 1)\)</span></td>
+<td><span class="math inline">\((1,1,-1)\)</span></td>
+<td><span class="math inline">\(y = -x + 1\)</span></td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\((1, 1, 1), \, (-1, -1, 1)\)</span></td>
+<td><span class="math inline">\((1,-1,0)\)</span></td>
+<td><span class="math inline">\(y = x\)</span></td>
 </tr>
 <tr class="odd">
-<td>3.</td>
-<td><span class="math inline">\((-2, 3, 0)\)</span></td>
-<td><span class="math inline">\(y = 2x/3\)</span></td>
-<td><span class="math inline">\((0, 0, 1), (1, 2/3, 1)\)</span></td>
-</tr>
-<tr class="even">
-<td>4.</td>
-<td><span class="math inline">\((0, 1, 1)\)</span></td>
-<td><span class="math inline">\(y = -1\)</span></td>
-<td><span class="math inline">\((k, -1, 1) \, \forall k\in \mathbb{R}\)</span></td>
-</tr>
-<tr class="odd">
-<td>6.</td>
-<td><span class="math inline">\((0, 0, 0)\)</span></td>
-<td></td>
-<td><span class="math inline">\(\mathbb{R}^2\)</span></td>
-</tr>
-<tr class="even">
-<td>5.</td>
-<td><span class="math inline">\((0, 0, k) \quad k \neq 0\)</span></td>
-<td>?</td>
-<td><span class="math inline">\((m, n, 0) \, \forall m, n\in \mathbb{R}\)</span></td>
+<td><span class="math inline">\((1, 4, 1), \, (2, 1, 1)\)</span></td>
+<td><span class="math inline">\((3, 1, -7)\)</span></td>
+<td><span class="math inline">\(y = -3x + 7\)</span></td>
 </tr>
 </tbody>
 </table>
@@ -249,9 +303,97 @@
 <h2 id="conics">Conics</h2>
 <h3 id="definition">Definition</h3>
 <!-- 5 points -->
-<h3 id="examples-1">Examples</h3>
-<!-- common classes, examples
-
+<p>A conic section is a quadratic curve generated by finding the intersection of a plane and the two cones created by rotating <span class="math inline">\(y = -x, \, y = x\)</span> about the y-axis. This curve may be written as</p>
+<p><span class="math display">\[ax^2 + bxy + cy^2 + dx + ey + f = 0\]</span></p>
+<p>and it can be represented using a symmetric, homogeneous matrix</p>
+<p><span class="math display">\[C = \begin{pmatrix}
+a &amp; b/2 &amp; d/2 \\
+b/2 &amp; c &amp; e/2 \\
+d/2 &amp; e/2 &amp; f
+\end{pmatrix}\]</span></p>
+<p>or a vector <span class="math inline">\((a,b,c,d,e,f) \in \mathbb{R}^6\)</span>.</p>
+<p>The points <span class="math inline">\(X = (x, y)\)</span> on the curve must satisfy the equation <span class="math inline">\(X^T C X = 0\)</span>.</p>
+<p>Let <span class="math inline">\(\Delta = \det C\)</span> and <span class="math inline">\(\alpha = b^2 -4ac\)</span>. With these two numbers, we can classify the shape generated by the conic.</p>
+<h3 id="circles-and-ellipses">Circles and Ellipses</h3>
+<p>If <span class="math inline">\(\Delta \neq 0\)</span> and <span class="math inline">\(\alpha &lt; 0\)</span>, the curve forms an ellipse.</p>
+<p>If <span class="math inline">\(a = c\)</span> and <span class="math inline">\(b = 0\)</span>, it forms a circle.</p>
+<h3 id="parabolas">Parabolas</h3>
+<p>If <span class="math inline">\(\Delta \neq 0, \, \alpha = 0\)</span> the curve forms a parabola.</p>
+<h3 id="hyperbolas">Hyperbolas</h3>
+<p>If <span class="math inline">\(\Delta \neq 0\, \alpha &gt; 0\)</span> the curve forms a hyperbola.</p>
+<p>If <span class="math inline">\(a + c = 0\)</span>, then the curve is a rectangular hyperbola where the asymptotes are perpendicular.</p>
+<h3 id="examples">Examples</h3>
+<table style="width:67%;">
+<colgroup>
+<col width="19%" />
+<col width="15%" />
+<col width="16%" />
+<col width="15%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Equation</th>
+<th>Conic</th>
+<th><span class="math inline">\(\Delta\)</span></th>
+<th><span class="math inline">\(\alpha\)</span></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>A circle centered at the origin with radius <span class="math inline">\(r\)</span>:</td>
+</tr>
+<tr class="even">
+<td><span class="math display">\[\left(\frac{x}{r}\right)^2 + \left(\frac{y}{r}\right)^2 - 1 = 0\]</span></td>
+<td><span class="math inline">\((1/r^2, 0, 1/r^2, 0, 0, -1)\)</span></td>
+<td><span class="math inline">\(-1/r^4\)</span></td>
+<td><span class="math inline">\(-4/r^4\)</span></td>
+</tr>
+<tr class="odd">
+<td>A parabola with y-intercept <span class="math inline">\(c\)</span>, symmetric about the y-axis:</td>
+</tr>
+<tr class="even">
+<td><span class="math display">\[ax^2 + c - y = 0\]</span></td>
+<td><span class="math inline">\((a, 0, 0, 0, -1, c)\)</span></td>
+<td><span class="math inline">\(-a/4\)</span></td>
+<td><span class="math inline">\(0\)</span></td>
+</tr>
+<tr class="odd">
+<td>A hyperbola centered at the origin:</td>
+</tr>
+<tr class="even">
+<td><span class="math display">\[\left(\frac{x}{u}\right)^2 - \left(\frac{y}{v}\right)^2 - 1 = 0\]</span></td>
+<td><span class="math inline">\((1/u^2, 0, -1/v^2, 0, 0, -1)\)</span></td>
+<td><span class="math inline">\(1/(uv)^2\)</span></td>
+<td><span class="math inline">\(4/(uv)^2\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>has coordinates <span class="math inline">\((1/u^2, 0, -1/v^2, 0, 0, -1)\)</span>. If <span class="math inline">\(u = v\)</span>, then it is rectangular.</p>
+<h3 id="degenerate-cases">Degenerate Cases</h3>
+<p>When <span class="math inline">\(\Delta = 0\)</span>, there are three possible curves. Each can be thought of as the limit point of an ellipse, parabola or hyperbola.</p>
+<table>
+<thead>
+<tr class="header">
+<th>Sign of <span class="math inline">\(\alpha\)</span></th>
+<th>Curve</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>-1</td>
+<td>Two lines intersecting at one point</td>
+</tr>
+<tr class="even">
+<td>0</td>
+<td>A single point</td>
+</tr>
+<tr class="odd">
+<td>1</td>
+<td>Two parallel lines, both could be the same line</td>
+</tr>
+</tbody>
+</table>
+<!--
 m^Tl + l^Tm
 
 dual conics-->
@@ -264,7 +406,7 @@ pictures from visualization
 <h3 id="euclidean-and-similarity-transformations">Euclidean and Similarity Transformations</h3>
 <p>These transformations consist of a rotation or reflection and a translation. Similarity transformations also scale by a factor of <span class="math inline">\(s\)</span> along both dimensions. It may be represented as a matrix where <span class="math inline">\(\epsilon = \pm 1\)</span>, If <span class="math inline">\(\epsilon = -1\)</span>, this produces a reflection.</p>
 <p>Euclidean transformations have only 3 degrees of freedom, so <span class="math inline">\(s = 1\)</span>.</p>
-<p><span class="math display">\[ \begin{pmatrix}x&#39; \\ y&#39; \\ 1\end{pmatrix}
+<p><span class="math display">\[ \begin{pmatrix}x' \\ y' \\ 1\end{pmatrix}
  = \begin{pmatrix}
    \epsilon s\cos\theta &amp; -s\sin\theta &amp; t_x \\
    \epsilon s\sin\theta &amp;  s\cos\theta &amp; t_y \\
@@ -273,26 +415,27 @@ pictures from visualization
    x \\ y \\ 1
    \end{pmatrix}\]</span></p>
 <p>A concise block-matrix representation is</p>
-<p><span class="math display">\[X&#39; = \begin{pmatrix}
+<p><span class="math display">\[X' = \begin{pmatrix}
 \epsilon sR(\theta) &amp; t \\
 0^T&amp; 1
 \end{pmatrix}X\]</span></p>
 <p>where <span class="math inline">\(R(\theta)\)</span> is a rotation matrix of angle <span class="math inline">\(\theta\)</span>.</p>
 <h3 id="affine-transformation">Affine Transformation</h3>
-<p><span class="math display">\[X&#39; = \begin{pmatrix}
+<p><span class="math display">\[X' = \begin{pmatrix}
  A &amp; t \\
 0^T&amp; 1
 \end{pmatrix}X\]</span></p>
 <p>where <span class="math inline">\(A\)</span> is a non-singular <span class="math inline">\(2\times 2\)</span> matrix. By a UDV decomposition, <span class="math inline">\(A\)</span> may be written as <span class="math display">\[A = R(\theta)R(-\phi)\begin{pmatrix}\lambda_1 &amp; 0 \\ 0 &amp; \lambda_2\end{pmatrix}R(\phi)\]</span></p>
 <h3 id="projective-transformation">Projective Transformation</h3>
 <p>This is the most general transformation, it only preserves straight lines.</p>
-<p><span class="math display">\[X&#39; = HX\]</span></p>
-<p>where <span class="math inline">\(H = (h_{ij})\)</span> is a non-singular matrix. It only has 8 degrees of freedom because the end result is divided by the third component of <span class="math inline">\(HX\)</span>. If <span class="math inline">\(X = (x, y, 1)\)</span> and <span class="math inline">\(X&#39; = (x&#39;, y&#39;, 1)\)</span> the new coordinates are:</p>
-<p><span class="math display">\[x&#39; = \frac{h_{11}x + h_{12}y + h_{13}}{h_{31}x + h_{32}y + h_{33}}\]</span> <span class="math display">\[y&#39; = \frac{h_{21}x + h_{22}y + h_{23}}{h_{31}x + h_{32}y + h_{33}}\]</span></p>
+<p><span class="math display">\[X' = HX\]</span></p>
+<p>where <span class="math inline">\(H = (h_{ij})\)</span> is a non-singular matrix. It only has 8 degrees of freedom because the end result is divided by the third component of <span class="math inline">\(HX\)</span>. If <span class="math inline">\(X = (x, y, 1)\)</span> and <span class="math inline">\(X' = (x', y', 1)\)</span> the new coordinates are:</p>
+<p><span class="math display">\[x' = \frac{h_{11}x + h_{12}y + h_{13}}{h_{31}x + h_{32}y + h_{33}}\]</span> <span class="math display">\[y' = \frac{h_{21}x + h_{22}y + h_{23}}{h_{31}x + h_{32}y + h_{33}}\]</span></p>
 <h3 id="transformation-of-lines">Transformation of lines</h3>
 <h3 id="transformation-of-conics">Transformation of conics</h3>
 <!--
 ## Projective Space
+P2, P5
 
 ### Lines Through the Origin
 
@@ -301,14 +444,14 @@ pictures from visualization
 ## Sources
 -->
 <p>Hartley and Zisserman, Szeliski</p>
+<p>https://en.wikipedia.org/wiki/Matrix_representation_of_conic_sections</p>
 <!-- load mathjax -->
 <script type="text/x-mathjax-config">
    MathJax.Hub.Config({
        text2jax: { processClass: "math" },
    });
 </script>
-<script type="text/javascript"
-  src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML">
+<script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML">
 </script>
 
     </div>

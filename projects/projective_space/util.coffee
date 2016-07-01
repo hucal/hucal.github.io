@@ -77,11 +77,13 @@ make_line = (collection, here, there, color, width=1, extend_vectors=true) ->
   return add_to(collection, new (THREE.Line)(geometry,
     new (THREE.LineBasicMaterial)((color: color, linewidth: width))))
 
-make_p_point = (p, color) ->
+make_p_point = (p, p_, color, trans_r2_plane=false) ->
   p = vec2_from_array p
 
   # Draw dot on canvas
-  c = add_to(r2_points, ctx_coords(p, (x, y) -> (new (createjs.Shape)()).set(x: x, y: y)))
+  if not trans_r2_plane
+    p_ = p 
+  c = add_to(r2_points, ctx_coords(p_, (x, y) -> (new (createjs.Shape)()).set(x: x, y: y)))
   c.graphics.beginFill(ctx_color(color)).drawCircle(0, 0, 4)
 
   o1 = make_line(r3_points, [-p.x, -p.y, -1], [p.x, p.y, 1], color)
@@ -96,15 +98,20 @@ make_p_point = (p, color) ->
     s2: [o2, o3]
     r3: [o1])
 
-make_p_line = (p1, p2, color, opacity=1.0, draw_points=false) ->
+make_p_line = (p1, p2, p1_, p2_, color, opacity=1.0, draw_points=false, trans_r2_plane=false) ->
+  if not trans_r2_plane
+    p1_ = p1  
+    p2_ = p2  
+  [p1_, p2_] = [vec2_from_array(p1_), vec2_from_array(p2_)]
+
   [p1, p2] = [vec2_from_array(p1), vec2_from_array(p2)]
   # Draw line on canvas
-  c = canvas_line(p1, p2, color, 3, r2_points)
+  c = canvas_line(p1_, p2_, color, 3, r2_points)
 
   _p1 = _p2 = []
   if draw_points
-    _p1 = make_p_point(p1, color)
-    _p2 = make_p_point(p2, color)
+    _p1 = make_p_point(p1, p1, color, trans_r2_plane)
+    _p2 = make_p_point(p2, p2, color, trans_r2_plane)
 
   # Rotate plane so that it lies along on the line from p1 to p2
   o = make_plane(r3_points, 3, color, opacity)

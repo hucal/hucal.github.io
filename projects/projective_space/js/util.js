@@ -131,10 +131,16 @@ make_line = function(collection, here, there, color, width, extend_vectors) {
   })));
 };
 
-make_p_point = function(p, color) {
+make_p_point = function(p, p_, color, trans_r2_plane) {
   var c, o1, o2, o3;
+  if (trans_r2_plane == null) {
+    trans_r2_plane = false;
+  }
   p = vec2_from_array(p);
-  c = add_to(r2_points, ctx_coords(p, function(x, y) {
+  if (!trans_r2_plane) {
+    p_ = p;
+  }
+  c = add_to(r2_points, ctx_coords(p_, function(x, y) {
     return (new createjs.Shape()).set({
       x: x,
       y: y
@@ -153,20 +159,28 @@ make_p_point = function(p, color) {
   };
 };
 
-make_p_line = function(p1, p2, color, opacity, draw_points) {
-  var _p1, _p2, angle, c, o, ref, v1, v2;
+make_p_line = function(p1, p2, p1_, p2_, color, opacity, draw_points, trans_r2_plane) {
+  var _p1, _p2, angle, c, o, ref, ref1, v1, v2;
   if (opacity == null) {
     opacity = 1.0;
   }
   if (draw_points == null) {
     draw_points = false;
   }
-  ref = [vec2_from_array(p1), vec2_from_array(p2)], p1 = ref[0], p2 = ref[1];
-  c = canvas_line(p1, p2, color, 3, r2_points);
+  if (trans_r2_plane == null) {
+    trans_r2_plane = false;
+  }
+  if (!trans_r2_plane) {
+    p1_ = p1;
+    p2_ = p2;
+  }
+  ref = [vec2_from_array(p1_), vec2_from_array(p2_)], p1_ = ref[0], p2_ = ref[1];
+  ref1 = [vec2_from_array(p1), vec2_from_array(p2)], p1 = ref1[0], p2 = ref1[1];
+  c = canvas_line(p1_, p2_, color, 3, r2_points);
   _p1 = _p2 = [];
   if (draw_points) {
-    _p1 = make_p_point(p1, color);
-    _p2 = make_p_point(p2, color);
+    _p1 = make_p_point(p1, p1, color, trans_r2_plane);
+    _p2 = make_p_point(p2, p2, color, trans_r2_plane);
   }
   o = make_plane(r3_points, 3, color, opacity);
   v1 = vec3(p1.x, p1.y, 1);
