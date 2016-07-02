@@ -1,3 +1,4 @@
+$(document).ready(
 # Prepare document and renderer.
 if (!Detector.webgl) then $('div#vis').prepend('<h2>The visualization requires WebGL.</h2>')
 if (!Detector.canvas) then $('div#vis').prepend('<h2>The visualization requires the HTML5 Canvas.</h2>')
@@ -287,3 +288,4 @@ $('button#clear_all').click(() -> lines = []; points = []; clear_scene())
 
 redraw()
 render()
+)
