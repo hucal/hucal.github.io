@@ -13,3 +13,11 @@ div#vis {
 .vis-ui table.palette td:first-child {
   text-align: right;
 }
+
+th {
+    text-align: left;
+    padding: 2px 5px;
+}
+td {
+    padding: 2px 5px;
+}

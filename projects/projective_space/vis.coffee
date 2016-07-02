@@ -1,10 +1,11 @@
 # Prepare document and renderer.
-if (!Detector.webgl) then Detector.addGetWebGLMessage
+if (!Detector.webgl) then $('div#vis').prepend('<h2>The visualization requires WebGL.</h2>')
+if (!Detector.canvas) then $('div#vis').prepend('<h2>The visualization requires the HTML5 Canvas.</h2>')
 
 container = document.getElementById('vis')
 
 scene = new (THREE.Scene)
-scene.fog = new THREE.FogExp2( 0xffffff, 0.002 );
+scene.fog = new THREE.FogExp2( 0xffffff, 0.002 )
 
 camera_far = 10000
 camera = new (THREE.PerspectiveCamera)(75, container.offsetWidth / container.offsetHeight, 0.1, camera_far)

@@ -13,7 +13,7 @@
   <!-- Always force latest IE rendering engine (even in intranet) -->
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
-  <title>Projective Space and Homogeneous Coordinates</title>
+  <title>Homogeneous Coordinates and Projective Space</title>
   <meta name="author" content="Hugo Rivera" />
   <meta name="description" content />
   <meta name="Copyright" content="Hugo Rivera" />
@@ -62,7 +62,7 @@
 
     <div class="col article">
     <article>
-      <h1>Projective Space and Homogeneous Coordinates</h1>
+      <h1>Homogeneous Coordinates and Projective Space</h1>
 
     <!--[if lt IE 8]>
     <p class="browserupgrade">You are using an <strong>outdated</strong> browser.
@@ -170,7 +170,7 @@
 </table>
 </div>
 
-<p>Angles theta and phi are in degrees. The grid is from (-2, -2) to (2, 2).</p>
+<p>Angles theta and phi are in degrees. The grid is from (-1, -1) to (1, 1).</p>
 
 <script src="https://code.jquery.com/jquery-3.0.0.slim.min.js"></script>
 <script src="https://code.createjs.com/easeljs-0.8.2.min.js"></script>
@@ -192,7 +192,7 @@ TODO finish math sections
 <h3 id="lines-and-points">Lines and Points</h3>
 <p>A line can be represented as</p>
 <p><span class="math display">\[ L = \{ (x,y) \in \mathbb{R}^2 | ax + by + c = 0 \} \]</span></p>
-<p>In slope-intercept form, this is <span class="math inline">\(y = -(a + c)/b\)</span>. Using homogeneous coordinates, this line is represented using a scale independent vector:</p>
+<p>In slope-intercept form this is <span class="math inline">\(y = -(a + c)/b\)</span>. Using homogeneous coordinates this line is represented using a scale independent vector:</p>
 <p><span class="math display">\[ l = \begin{pmatrix} ka \\ kb \\ kc \end{pmatrix}, \quad \forall k \in \mathbb{R} \]</span></p>
 <p>Clearly, a point lies on this line if the dot product of <span class="math inline">\((x,y,1)\)</span> and the vector is zero.</p>
 <p><span class="math display">\[ L = \{ (x,y,1) \in \mathbb{R}^2 | (x,y,1) \cdot (a,b,c) = 0 \} \]</span></p>
@@ -368,7 +368,6 @@ d/2 &amp; e/2 &amp; f
 </tr>
 </tbody>
 </table>
-<p>has coordinates <span class="math inline">\((1/u^2, 0, -1/v^2, 0, 0, -1)\)</span>. If <span class="math inline">\(u = v\)</span>, then it is rectangular.</p>
 <h3 id="degenerate-cases">Degenerate Cases</h3>
 <p>When <span class="math inline">\(\Delta = 0\)</span>, there are three possible curves. Each can be thought of as the limit point of an ellipse, parabola or hyperbola.</p>
 <table>
@@ -404,7 +403,7 @@ common classes, what is preserved, examples
 pictures from visualization
 -->
 <h3 id="euclidean-and-similarity-transformations">Euclidean and Similarity Transformations</h3>
-<p>These transformations consist of a rotation or reflection and a translation. Similarity transformations also scale by a factor of <span class="math inline">\(s\)</span> along both dimensions. It may be represented as a matrix where <span class="math inline">\(\epsilon = \pm 1\)</span>, If <span class="math inline">\(\epsilon = -1\)</span>, this produces a reflection.</p>
+<p>These transformations consist of a rotation or reflection and a translation. Similarity transformations also scale by a factor of <span class="math inline">\(s\)</span> along both dimensions. It may be represented as a matrix where <span class="math inline">\(\epsilon = \pm 1\)</span>, If <span class="math inline">\(\epsilon = -1\)</span> this produces a reflection.</p>
 <p>Euclidean transformations have only 3 degrees of freedom, so <span class="math inline">\(s = 1\)</span>.</p>
 <p><span class="math display">\[ \begin{pmatrix}x' \\ y' \\ 1\end{pmatrix}
  = \begin{pmatrix}

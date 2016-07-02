@@ -2,7 +2,11 @@
 var add_all, c, camera, camera_far, clear_scene, color_dir, colors, container, controls, current_color, i, j, k, l, len, len1, lines, m, m_, make_rotation, max, obj, points, r2, r2_canvas, r2_points, r2_resolution, r2_stage, r2_texture, r3_points, read_input_matrix, redraw, ref, ref1, ref2, render, renderer, s, s2, s2_points, scene, show_r2, show_r3, show_s2, t, theta, trans_r2_plane, transform, write_input_matrix, x, y;
 
 if (!Detector.webgl) {
-  Detector.addGetWebGLMessage;
+  $('div#vis').prepend('<h2>The visualization requires WebGL.</h2>');
+}
+
+if (!Detector.canvas) {
+  $('div#vis').prepend('<h2>The visualization requires the HTML5 Canvas.</h2>');
 }
 
 container = document.getElementById('vis');
