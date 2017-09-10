@@ -1,0 +1,130 @@
+html,head,body { padding:0; margin:0; }
+
+body { font-family: calibri, helvetica, arial, sans-serif; }
+
+main h2, main h3 {
+    margin: 0;
+}
+
+.messages {
+    text-align: center;
+    font-size: 2em;
+    font-weight: bold;
+}
+
+.paused .board {
+    background-color: grey !important;
+}
+
+.info > div { 
+    display: inline-block;
+}
+
+.held .cell {
+    width: 0.5em;
+    height: 0.5em;
+}
+
+.board {
+    transition: background-color 0.5s ease;
+    text-align: center;
+    font-family: monospace;
+    font-weight: bold;
+    float: left;
+    width: 45%;
+    padding: 1vw 1.92vw; 
+    font-size: 1.4em;
+    border: 1px solid black;
+}
+
+.board button {
+    font-size: 1em;
+    margin: 0.5vw;
+    padding: 0.1vw 1vw;
+      -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+     -khtml-user-select: none; /* Konqueror HTML */
+       -moz-user-select: none; /* Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+            user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome and Opera */
+}
+
+/* TODO use nth-child or take team into account */
+
+#team1 button {
+    border: solid 3px black;
+    background: white;
+}
+
+#team2 {
+    color: white;
+    background: black;
+}
+
+#team2 button {
+    color: white;
+    border: solid 3px white;
+    font-weight: bold;
+    background: black;
+}
+
+.grid div {
+    margin: 0;
+    padding: 0;
+    font-size: 1em;
+    line-height: 0;
+}
+
+.cell { 
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+} 
+
+.clearedRow { transition: background-color 0.5s; }
+
+#team1 .cell {
+    border: 0.15em solid #bbb;
+}
+
+#team2 .cell {
+    border: 0.15em solid #222;
+}
+
+/* 
+ns =  [ "I", "S", "Z", "L", "J", "T", "O" ]
+
+cs = [eval(c.replace('rgb','')) for c in ['rgb(215,48,39)','rgb(252,141,89)','rgb(254,224,144)','rgb(255,255,191)','rgb(224,243,248)','rgb(145,191,219)','rgb(69,117,180)']]
+
+[print("#team1 .shape{} {{ color: rgb{} }}".format(n, tuple((255 - i for i in c)))) for (n, c) in zip(ns, cs)]
+
+[print("#team2 .shape{} {{ color: rgb{} }}".format(n, c)) for (n, c) in zip(ns, cs)]
+*/
+
+.edge, .topMargin { background-color: #888; }
+
+.ghost { 
+    -webkit-transition: background-color 0.2s;
+    transition: background-color 0.2s;
+}
+
+#team1 .ghost { 
+    background-color: black;
+    border-color: orange; 
+}
+#team2 .ghost { 
+    background-color: white;
+    border-color: #ddd;
+}
+
+#team1 .tetromino { border-color: black; }
+#team2 .tetromino { border-color: black; }
+
+.tetrominoI { background-color: rgb(215, 48, 39) }
+.tetrominoS { background-color: rgb(252, 141, 89) }
+.tetrominoZ { background-color: rgb(254, 224, 144) }
+.tetrominoL { background-color: rgb(255, 255, 191) }
+.tetrominoJ { background-color: rgb(224, 243, 248) }
+.tetrominoT { background-color: rgb(145, 191, 219) }
+.tetrominoO { background-color: rgb(69, 117, 180) }
